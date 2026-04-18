@@ -25,7 +25,7 @@ pnpm dev
 - [x] 根目录 `pnpm-workspace.yaml` 纳入 `packages/*`
 - [x] 根 `package.json`：`pnpm dev` 使用 `concurrently` 多进程
 - [x] 去除子包孤立 `pnpm-lock.yaml`（以根 lockfile 为准）
-- [ ] 归档或移除根目录旧 TUILiveKit 独立应用（仅保留 `packages/vue3` 为唯一前端工程）— *可选，见 `archive/legacy-tuilivekit-root/README.md`*
+- [x] 归档根目录旧 TUILiveKit 独立应用与旧 `upload-server` 到 `archive/`，删除空的 `packages/react/`（见 [`archive/README.md`](../archive/README.md)）
 - [x] **Gate A**：`pnpm install` 成功；`pnpm --filter livekit-manager-vue3 build` 通过（`vue-tsc -b && vite build`）
 
 ---
@@ -65,23 +65,25 @@ pnpm dev
 - [x] `docs/pnpm-workspace.md`
 - [x] `docs/coding-style.md`
 - [x] 新增 [`docs/README.monorepo.md`](./README.monorepo.md)：端口、环境变量、`pnpm dev` 一键启动、SWAP 指南
+- [x] 重写根 [`README.zh.md`](../README.zh.md)：以 monorepo 视角组织目录、快速上手、文档索引；原单体说明已归档
 - [ ] **Gate E**：新成员按文档 30 分钟内跑通 `pnpm dev` 全链路演示（需实际验收）
 
 ---
 
 ## Phase F — 清理与二期占位
 
-- [ ] `docs/REACT_INVENTORY_OBS.md` 标注 Deprecated 或改写为 Vue 视角
-- [ ] 机器人 / OBS 高级能力：**默认隐藏**，文档列 Backlog
-- [ ] **Gate F**：仓库内无「双根 Vite」误导；CI（若有）与本地脚本一致
+- [x] 仓库根目录已无遗留 `index.html / vite.config.ts / src / upload-server`，旧资产统一进入 `archive/`
+- [x] `docs/REACT_INVENTORY_OBS.md` 已在根目录清理时连同 React 残留移除（如后续重新落地 React 视角，再建新文档）
+- [ ] 机器人 / OBS 高级能力：**默认隐藏**，文档列 Backlog（管理端 `room-list.vue` 仍保留 OBS 详情弹窗的拉取逻辑，待产品决策）
+- [x] **Gate F**：仓库内无「双根 Vite」误导；`pnpm install && pnpm --filter livekit-manager-vue3 build` 单条路径可用
 
 ---
 
-## 当前执行顺序（建议本周次序）
+## 下一步（Backlog）
 
-1. 完成 Phase B 剩余：清掉所有 `tdesign-icons` / 模板残留；`pnpm --filter livekit-manager-vue3 build` 绿。
-2. 完成 Phase C：主播入口 token + 换签接口（`packages/server`）。
-3. 完成 Phase D：审核通过后代发房间消息 + 契约与 progress 勾选同步。
-4. Phase E/F：README 与过时文档收尾。
+1. **Gate E 外部验收**：新成员按 [`docs/README.monorepo.md`](./README.monorepo.md) 跑通 `pnpm dev` 全链路。
+2. **Redis SWAP 落地**：按 `packages/audit-server/src/store.js` 顶部注释实现 `RedisCommentStore`，替换时仅调 `index.js` 的 import。
+3. **机器人 / OBS 高级能力**：管理端 `room-list.vue` 保留的 OBS 详情弹窗拉取逻辑待产品决策；默认隐藏，重新上线时另立路由。
+4. **`trtc_proxy` 群组自动创建**：`approve` 代发 `send_group_msg` 前若 GroupId 不存在会返回 10015，后续可在 `packages/server` 加一层 `create_group` 前置或在管理端建场时同步创建 IM 群。
 
 **最后更新**：以 Git 提交为准；修改计划时请同步勾选本文件对应条目。

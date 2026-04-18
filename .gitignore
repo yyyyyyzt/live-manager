@@ -10,8 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+coverage
 *.local
-stats.html
 
 # Editor directories and files
 .vscode/*
@@ -23,3 +23,7 @@ stats.html
 *.njsproj
 *.sln
 *.sw?
+
+# Env files (per-package .env is tracked by packages/vue3/.env explicitly)
+.env.local
+.env.*.local

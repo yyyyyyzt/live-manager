@@ -7,6 +7,7 @@
 ```
 live-demo/
 ├── docs/                         # 本文档、契约、进度
+├── archive/                      # 历史代码快照，不参与构建
 ├── packages/
 │   ├── common/                   # @live-manager/common（共享业务与工具）
 │   ├── server/                   # livekit-manager-server（管理端 Node API）
@@ -15,6 +16,8 @@ live-demo/
 ├── pnpm-workspace.yaml
 └── package.json
 ```
+
+> 仓库根目录旧的 `index.html / src / public / upload-server / vite.config.ts` 已迁至 [`archive/legacy-tuilivekit-root`](../archive/legacy-tuilivekit-root/README.md) 和 [`archive/legacy-upload-server`](../archive/legacy-upload-server/README.md)。
 
 ## 端口与默认地址
 
