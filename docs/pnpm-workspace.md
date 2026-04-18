@@ -7,6 +7,8 @@ live-demo/
 ├── pnpm-workspace.yaml    # packages/*
 ├── pnpm-lock.yaml         # 仅根目录一份
 ├── package.json           # 编排脚本，不含业务依赖
+├── docs/                  # 工程文档
+├── archive/               # 历史代码快照（不参与构建，详见 archive/README.md）
 └── packages/
     ├── common/            # @live-manager/common
     ├── server/            # livekit-manager-server
