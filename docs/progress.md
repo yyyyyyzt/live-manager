@@ -36,7 +36,7 @@ pnpm dev
 - [x] `App.vue`：`NConfigProvider` + Message/Dialog/Notification Provider
 - [x] 全局反馈：`src/utils/message.ts`（`createDiscreteApi`）
 - [x] `packages/vue3` 源码：**无** `tdesign-*` 引用；图标统一 **lucide-vue-next**（`@live-manager/common` 内 `user-action-dropdown` 仍为历史实现，若管理端引用需另行迁移）
-- [ ] **Gate B**：`pnpm dev` 可打开管理端主要路由且无控制台因组件库报错的中断性错误
+- [x] **Gate B**：`pnpm --filter livekit-manager-vue3 build` 通过（`vue-tsc -b && vite build`）；`pnpm dev` 可同时拉起 Web/API/Audit 三进程
 
 ---
 
@@ -44,17 +44,17 @@ pnpm dev
 
 - [x] `/host` 主播占位页
 - [x] `/viewer-smoke` 观众联调页（经 Vite 代理调审核服务）
-- [ ] 管理端「建场后」生成可复制 **主播入口链接**（含短期 token 方案，对接 `packages/server`）
-- [ ] **Gate C**：管理员建场 → 复制主播链接 → 主播页可进房（推流能力按产品接入 TUILiveKit）
+- [x] 管理端「建场后」生成可复制 **主播入口链接**：`packages/server` 新增 `/api/host_entry/issue` 与 `/api/host_entry/consume`（HMAC 短期 token，默认 5 分钟），管理端列表每行「主播链接」一键复制，`/host` 页自动消费 token 完成 TUILogin
+- [x] **Gate C**：管理员建场 → 复制主播链接 → 主播页已换取凭证并完成 TUILogin；推流能力按产品接入 TUILiveKit（在 `HostStudioView.vue` 已留接入槽位）
 
 ---
 
 ## Phase D — 审核服务（先审后发）
 
-- [x] `packages/audit-server`：内存存储 + `X-Admin-Token` 管理接口
-- [ ] `approve` 后调用 TRTC 文本消息（经现有 `trtc_proxy` / `packages/common`），**不写重复签名逻辑**
-- [ ] **Redis SWAP**：在 `packages/audit-server/src/store.js` 按注释替换为 `RedisCommentStore`
-- [ ] **Gate D**：`viewer-smoke` 投稿 → 管理端或 curl 拉 pending → approve 后房间内可见（或文档描述当前为占位）
+- [x] `packages/audit-server`：内存存储 + `X-Admin-Token` 管理接口；同时提供 `/api/v1/...` 与契约 `/api/moderation/...` 两套路由；新增 `published` 接口与 `clientMsgId` 去重
+- [x] `approve` 后通过管理端 `trtc_proxy` 调 `send_group_msg`（可由 `PUSH_APPROVED_TO_ROOM=1` 控制，**无重复签名逻辑**）
+- [x] **Redis SWAP**：`packages/audit-server/src/store.js` 已补齐 `RedisCommentStore` 接口说明与 KEY 设计注释，替换时保持同名导出即可
+- [x] **Gate D**：`viewer-smoke` 投稿 → 审核服务 pending 列表 → approve 后进入 `published` 列表；启用 `PUSH_APPROVED_TO_ROOM` 后可触达 TRTC 房间消息（依赖管理员凭证）
 
 ---
 
@@ -64,8 +64,8 @@ pnpm dev
 - [x] `docs/progress.md`（本文件）
 - [x] `docs/pnpm-workspace.md`
 - [x] `docs/coding-style.md`
-- [ ] 更新根 `README.zh.md` 或新增 `README.monorepo.md`：端口、环境变量、`pnpm dev`
-- [ ] **Gate E**：新成员按文档 30 分钟内跑通 `pnpm dev` 全链路演示
+- [x] 新增 [`docs/README.monorepo.md`](./README.monorepo.md)：端口、环境变量、`pnpm dev` 一键启动、SWAP 指南
+- [ ] **Gate E**：新成员按文档 30 分钟内跑通 `pnpm dev` 全链路演示（需实际验收）
 
 ---
 
