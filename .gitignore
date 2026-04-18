@@ -1,11 +1,8 @@
 node_modules
 .DS_Store
-
 .history
-.codebuddy
 .vibe
 dist
-*.md
 !README.md
 .vscode
 
