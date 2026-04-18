@@ -1,0 +1,44 @@
+{
+  "name": "livekit-manager-react",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite --port=2028",
+    "build": "vite build",
+    "preview": "vite preview",
+    "publish:github": "node ./scripts/publish_github.js"
+  },
+  "dependencies": {
+    "@live-manager/common": "workspace:*",
+    "@tencentcloud/uikit-base-component-react": "^1.2.0",
+    "axios": "^1.13.4",
+    "classnames": "^2.5.1",
+    "lucide-react": "^0.563.0",
+    "moment": "2.29.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-easy-crop": "^5.5.6",
+    "react-router-dom": "^7.8.2",
+    "svgaplayerweb": "^2.3.2",
+    "tdesign-icons-react": "0.5.0",
+    "tdesign-react": "1.12.0",
+    "tuikit-atomicx-react": "5.5.4-beta.4",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.21.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^15.15.0",
+    "less": "^4.6.4",
+    "replace": "^1.2.1",
+    "sass": "^1.90.0",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.24.1",
+    "vite": "^6.2.0"
+  }
+}

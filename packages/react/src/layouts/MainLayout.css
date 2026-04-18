@@ -1,0 +1,251 @@
+/* 主布局 */
+.main-layout {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-color-page, #F5F7FA);
+}
+
+/* 顶部导航栏 */
+.main-header {
+  height: 48px;
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--stroke-color-module, #EAEDF2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  flex-shrink: 0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-icon {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #1C66E5 0%, #366EF4 100%);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.logo-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color-primary, #1D2129);
+}
+
+.header-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--stroke-color-module, #EAEDF2);
+}
+
+.page-title {
+  font-size: 18px;
+  font-weight: 550;
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.user-menu:hover {
+  background: var(--bg-color-secondary, #F7F8FA);
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  background: var(--bg-color-tertiary, #F2F3F5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color-secondary, #4E5969);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.user-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.user-name {
+  font-size: 14px;
+  color: var(--text-color-primary, #1D2129);
+}
+
+.user-chevron {
+  color: var(--text-color-tertiary, #86909C);
+  transition: transform 0.2s;
+}
+
+.user-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+/* 用户菜单容器 */
+.user-menu-wrapper {
+  position: relative;
+}
+
+/* 用户下拉菜单 */
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 140px;
+  background: #FFFFFF;
+  border: 1px solid var(--stroke-color-module, #EAEDF2);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  padding: 4px;
+  z-index: 100;
+}
+
+.user-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-color-secondary, #4E5969);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.user-dropdown-item:hover {
+  background: #FFF1F0;
+  color: #E34D59;
+}
+
+/* 主体布局 */
+.main-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* 侧边栏 */
+.main-sidebar {
+  width: 200px;
+  background: #FFFFFF;
+  border-right: 1px solid var(--stroke-color-module, #EAEDF2);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.sidebar-content {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+/* 侧边栏菜单 */
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text-color-secondary, #4E5969);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.menu-item:hover {
+  background: var(--bg-color-secondary, #F7F8FA);
+  color: var(--text-color-primary, #1D2129);
+}
+
+.menu-item.active {
+  background: #F1F6FF;
+  color: #1C66E5;
+  font-weight: 500;
+}
+
+/* 侧边栏底部 */
+.sidebar-footer {
+  padding: 12px;
+  border-top: 1px solid var(--stroke-color-module, #EAEDF2);
+}
+
+.footer-text {
+  font-size: 12px;
+  color: var(--text-color-tertiary, #86909C);
+}
+
+/* 主内容区 */
+.main-content {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--bg-color-page, #F5F7FA);
+  display: flex;
+  flex-direction: column;
+}
+
+.content-wrapper {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-x: auto;
+  padding: 24px;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .main-sidebar {
+    width: 60px;
+  }
+  
+  .menu-item span {
+    display: none;
+  }
+  
+  .menu-item {
+    justify-content: center;
+    padding: 0;
+  }
+}

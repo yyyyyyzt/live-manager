@@ -1,0 +1,555 @@
+/* 弹窗内容 */
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06), 0 8px 18px rgba(0, 0, 0, 0.06);
+  outline: 1px solid #E6E9F0;
+  outline-offset: -1px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 创建直播间弹窗宽度已在 index.css 全局定义 */
+
+/* 弹窗头部 */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 0;
+  min-height: 24px;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.9);
+  margin: 0;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.4);
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  background: #F5F7FA;
+  color: #22262E;
+}
+
+/* 弹窗主体 */
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* 创建表单 */
+.create-room-form {
+  display: flex;
+  flex-direction: column;
+}
+
+/* TDesign Form 适配 - 覆盖 inline 布局默认的 margin:0 和 inline-block */
+.create-room-modal .t-form-inline .t-form__item {
+  display: block;
+  margin: 0 0 16px 0;
+  min-width: unset;
+}
+
+.create-room-modal .t-form-inline .t-form__item:last-child {
+  margin-bottom: 0;
+}
+
+/* 输入框内的字节计数后缀 */
+.input-suffix-count {
+  color: rgba(0, 0, 0, 0.4);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.input-suffix-count.byte-overflow {
+  color: #e54545;
+}
+
+/* ImageUpload 在 FormItem 内自适应宽度 */
+.create-room-modal .t-form__controls-content .image-upload-container {
+  width: 100%;
+}
+
+/* 自定义信息折叠/展开区域 */
+.custom-info-section {
+  margin-top: 4px;
+}
+
+.custom-info-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+  padding: 4px 0;
+  transition: color 0.2s;
+}
+
+.custom-info-toggle:hover {
+  color: rgba(0, 0, 0, 0.9);
+}
+
+.custom-info-toggle .t-icon {
+  transition: transform 0.2s;
+}
+
+.custom-info-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #E3F1FC;
+  color: #1C66E5;
+  font-size: 12px;
+  line-height: 1;
+  margin-left: 4px;
+}
+
+/* 自定义信息区域在 FormItem 内自适应 */
+.create-room-modal .t-form__controls-content .custom-info-container {
+  width: 100%;
+}
+
+/* 自定义信息容器 */
+.custom-info-container {
+  background: #F9FAFC;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.custom-info-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.custom-input-wrap {
+  position: relative;
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.custom-input-wrap.custom-value-wrap {
+  width: auto;
+  flex: 1;
+}
+
+/* 自定义信息输入框右下角字节计数 */
+.custom-input-byte-count {
+  display: block;
+  text-align: right;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.4);
+  margin-top: 2px;
+  line-height: 1;
+}
+
+.custom-input-byte-count.byte-overflow {
+  color: #e54545;
+}
+
+/* 删除自定义信息按钮 */
+.remove-custom-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  color: rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  padding: 0;
+  border-radius: 6px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.remove-custom-info-btn:hover {
+  background: #F5F7FA;
+  color: #E54545;
+}
+
+/* 弹窗底部 */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 24px 24px;
+  background: white;
+}
+
+/* 胶囊按钮 */
+.pill-btn {
+  height: 32px;
+  padding: 0 24px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pill-btn-primary {
+  background: #1C66E5;
+  color: white;
+}
+
+.pill-btn-primary:hover:not(:disabled) {
+  background: #1557c2;
+}
+
+.pill-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pill-btn-ghost {
+  background: transparent;
+  color: #1C66E5;
+  outline: 1px solid #1C66E5;
+  outline-offset: -1px;
+}
+
+.pill-btn-ghost:hover {
+  background: rgba(28, 102, 229, 0.05);
+}
+
+/* TPM 按钮样式 */
+.tpm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.tpm-btn-primary {
+  background: #1C66E5;
+  color: white;
+}
+
+.tpm-btn-primary:hover {
+  background: #1557c2;
+}
+
+.tpm-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tpm-btn-default {
+  background: white;
+  color: #333;
+  border: 1px solid #dcdcdc;
+}
+
+.tpm-btn-default:hover {
+  background: #f5f5f5;
+}
+
+/* TPM 输入框样式 */
+.tpm-input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #E6E9F0;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+.tpm-input:focus {
+  border-color: #1C66E5;
+}
+
+.tpm-input::placeholder {
+  color: rgba(0, 0, 0, 0.25);
+}
+
+/* 自定义信息 - 输入框错误状态 */
+.custom-info-row .t-input--error {
+  border-color: #e54545;
+}
+
+.room-id-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+/* 加载状态 */
+.loading-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+}
+
+.loading-wrapper p {
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* 消息提示 */
+.message-toast {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1001;
+  padding: 12px 20px;
+  border-radius: 6px;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* 创建成功提示 */
+.create-success-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 32px 24px;
+}
+
+.create-success-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.create-success-icon {
+  margin-bottom: 16px;
+}
+
+.create-success-content h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #22262E;
+  margin: 0 0 8px 0;
+}
+
+.create-success-description {
+  font-size: 14px;
+  color: #99A2B2;
+  margin: 0;
+}
+
+.create-success-description.is-error {
+  color: #E54545;
+}
+
+.create-success-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.create-success-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #22262E;
+}
+
+/* 推流信息样式 */
+.stream-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stream-info-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.stream-info-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.success-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #52C41A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.stream-info-title h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #22262E;
+  margin: 0 0 4px 0;
+}
+
+.stream-info-title p {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.4);
+  margin: 0;
+}
+
+.stream-info-items {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stream-info-item {
+  background: #F9FAFC;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #F0F2F7;
+}
+
+.stream-info-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.4);
+}
+
+.stream-info-value {
+  display: block;
+  font-size: 13px;
+  color: #22262E;
+  word-break: break-all;
+  font-family: 'SF Mono', Monaco, monospace;
+  background: #FFFFFF;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #E6E9F0;
+}
+
+/* 操作链接 */
+.action-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 14px;
+  color: #1C66E5;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 4px;
+}
+
+.action-link:hover {
+  background: rgba(28, 102, 229, 0.1);
+}
+
+/* 动画 */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 封面预览 */
+.cover-preview {
+  border: 1px solid #E6E9F0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #F9FAFC;
+}
+
+.cover-preview-img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
+/* 禁用状态的输入框 */
+.tpm-input:disabled {
+  background: #F5F7FA;
+  color: rgba(0, 0, 0, 0.4);
+  cursor: not-allowed;
+}
+
+/* 响应式 */
+@media (max-width: 640px) {
+  .modal-content {
+    width: 95% !important;
+    max-height: 95vh;
+  }
+  
+  .room-id-input-group {
+    flex-direction: column;
+  }
+}

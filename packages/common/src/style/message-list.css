@@ -1,0 +1,137 @@
+/* 消息列表容器 */
+.message-list-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* 弹幕列表包装器 */
+.barrage-list-wrapper {
+  height: 100%;
+  overflow: visible;
+}
+
+/* 消息项 */
+.message-item {
+  font-size: 13px;
+  line-height: 1.5;
+  transition: background-color 0.15s;
+  border-radius: 4px;
+  word-break: break-word;
+  text-align: left;
+}
+
+/* 主播标识 */
+.message-badge {
+  display: inline-block;
+  background: #00b2ff;
+  color: #fff;
+  font-size: 10px;
+  padding: 0 4px;
+  border-radius: 10px;
+  line-height: 16px;
+  height: 16px;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+/* 用户名 - 可点击 */
+.message-username {
+  color: #666;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* 消息内容 */
+.message-content {
+  color: #333;
+  word-break: break-word;
+}
+
+/* 消息文本 */
+.message-text {
+  display: inline;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+/* 表情 */
+.message-emoji {
+  display: inline;
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  margin: 0 1px;
+}
+
+/* SDK 表情覆盖 */
+.uikit-barrageList__emoji {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+/* 消息提示 */
+.message-group-tip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: #999;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.tip-name {
+  font-weight: 500;
+}
+
+.tip-action {
+  color: #999;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 礼物消息 - 仅用户名可点击 */
+.message-item.gift .message-username {
+  cursor: pointer;
+}
+
+/* 房主等不可点击 - 不显示 pointer */
+.message-item.host,
+.message-item.owner,
+.message-item.non-clickable,
+.message-item.host .message-username,
+.message-item.owner .message-username,
+.message-item.non-clickable .message-username {
+  cursor: default;
+}
+
+/* 下拉菜单样式 - 已统一到 @live-manager/common/components/user-action-dropdown/user-action-dropdown.css */
+
+/* 滚动条样式 */
+.message-list-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.message-list-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.message-list-scroll::-webkit-scrollbar-thumb {
+  background: #e0e0e0;
+  border-radius: 3px;
+}
+
+.message-list-scroll::-webkit-scrollbar-thumb:hover {
+  background: #bdbdbd;
+}

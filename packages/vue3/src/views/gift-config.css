@@ -1,0 +1,65 @@
+/* ==================== Vue3 端特有覆盖样式 ==================== */
+/* 公共样式已从 @live-manager/common/style/gift-config 引入 */
+
+/* 搜索框 - TDesign Input */
+.gift-search-input {
+  width: 220px;
+}
+
+.gift-search-input .t-input {
+  border-radius: 16px !important;
+  background: white !important;
+  border: 1px solid #E6E9F0 !important;
+  height: 32px !important;
+  box-shadow: none !important;
+}
+
+.gift-search-input .t-input:hover {
+  border-color: #1C66E5 !important;
+}
+
+.gift-search-input .t-input__inner {
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+.gift-search-input .t-input__inner::placeholder {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+.gift-search-input .search-icon {
+  cursor: pointer;
+}
+
+/* 卡片 - TDesign Card - 使用组合选择器提高特异性 */
+.gift-list-card.t-card {
+  padding-left: 10px;
+}
+
+/* 操作按钮间距覆盖 */
+.gift-actions {
+  gap: 12px;
+}
+
+/* 类别选择弹窗 */
+.category-select-list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.category-select-item {
+  padding: 8px 0;
+}
+
+.category-select-empty {
+  padding: 20px 16px;
+  font-size: 14px;
+  color: #99A2B2;
+  text-align: center;
+}
+
+.category-select-footer {
+  margin-top: 16px;
+  text-align: center;
+}

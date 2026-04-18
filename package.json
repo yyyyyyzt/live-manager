@@ -1,0 +1,16 @@
+{
+  "private": true,
+  "scripts": {
+    "dev:react": "pnpm --filter livekit-manager-react dev",
+    "dev:vue": "pnpm --filter livekit-manager-vue3 dev",
+    "start:server": "pnpm --filter livekit-manager-server start",
+    "build:react": "pnpm --filter livekit-manager-react build",
+    "build:vue": "pnpm --filter livekit-manager-vue3 build"
+  },
+  "devDependencies": {
+    "depcheck": "^1.4.7"
+  },
+  "dependencies": {
+    "svgaplayerweb": "^2.3.2"
+  }
+}

@@ -1,0 +1,440 @@
+/* ========== ImageUpload 组件样式 ========== */
+.image-upload-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 模式切换 */
+.image-upload-mode-switch {
+  display: flex;
+  gap: 0;
+  margin-bottom: 8px;
+  background: #F5F7FA;
+  border-radius: 6px;
+  padding: 2px;
+  width: 100%;
+}
+
+.mode-switch-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: rgba(0, 0, 0, 0.5);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-switch-btn.active {
+  background: white;
+  color: #1C66E5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.mode-switch-btn:hover:not(.active) {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+/* URL 输入 */
+.image-upload-url-input {
+  display: flex;
+  gap: 8px;
+}
+
+/* 输入框内的字节计数后缀 */
+.image-upload-url-input .input-suffix-count {
+  color: rgba(0, 0, 0, 0.4);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.image-upload-url-input .input-suffix-count.byte-overflow {
+  color: #e54545;
+}
+
+/* URL 验证中提示 */
+.image-upload-url-input .input-suffix-validating {
+  color: #1C66E5;
+  font-size: 12px;
+  white-space: nowrap;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* URL 验证错误提示 */
+.image-upload-url-error {
+  font-size: 12px;
+  color: #e54545;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* 上传拖拽区 */
+.image-upload-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  border: 1.5px dashed #D4D8E0;
+  border-radius: 8px;
+  background: #FAFBFC;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: rgba(0, 0, 0, 0.3);
+}
+
+.image-upload-dropzone:hover {
+  border-color: #1C66E5;
+  background: rgba(28, 102, 229, 0.02);
+  color: #1C66E5;
+}
+
+.image-upload-dropzone.uploading {
+  cursor: default;
+  border-color: #1C66E5;
+}
+
+.upload-hint {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.5);
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.upload-sub-hint {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.3);
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* 上传进度 */
+.image-upload-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 60%;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: #E6E9F0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #1C66E5;
+  border-radius: 2px;
+  transition: width 0.2s;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: #1C66E5;
+}
+
+/* 预览区 */
+.image-upload-preview {
+  position: relative;
+  border: 1px solid #E6E9F0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #F9FAFC;
+}
+
+.image-upload-preview img,
+.image-upload-preview video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.image-upload-preview.url-preview {
+  border: 1px solid #E6E9F0;
+}
+
+.image-upload-preview-actions {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.image-upload-preview:hover .image-upload-preview-actions {
+  opacity: 1;
+}
+
+.preview-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  cursor: pointer;
+  color: #333;
+  transition: all 0.2s;
+}
+
+.preview-action-btn:hover {
+  background: white;
+  transform: scale(1.1);
+}
+
+/* Provider 标记 */
+.image-upload-provider-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+  color: white;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 4px;
+  pointer-events: none;
+  letter-spacing: 0.5px;
+  line-height: 16px;
+}
+
+/* 上传失败标记 */
+.upload-failed-badge {
+  background: #e54545 !important;
+}
+
+/* 上传中覆盖层 */
+.image-upload-uploading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+}
+
+.image-upload-progress-circle {
+  position: relative;
+  width: 56px;
+  height: 56px;
+}
+
+.progress-ring {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 3;
+}
+
+.progress-ring-fill {
+  fill: none;
+  stroke: #1C66E5;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.2s ease;
+}
+
+.progress-percent {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+}
+
+.upload-status-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ========== 裁剪弹窗 ========== */
+.image-crop-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #F0F2F7;
+}
+
+.image-crop-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.9);
+  margin: 0;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.image-crop-header .modal-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.4);
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-crop-header .modal-close:hover {
+  background: #F5F7FA;
+  color: #22262E;
+}
+
+.image-crop-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 24px;
+}
+
+.image-crop-area {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  min-height: 200px;
+  max-height: 50vh;
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* 图片加载状态 */
+.image-crop-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: #1a1a1a;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #1C66E5;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 裁剪弹窗底部 */
+.image-crop-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid #F0F2F7;
+}
+
+.crop-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.crop-btn-primary {
+  background: #1C66E5;
+  color: white;
+}
+
+.crop-btn-primary:hover {
+  background: #1557c2;
+}
+
+.crop-btn-ghost {
+  background: transparent;
+  color: rgba(0, 0, 0, 0.6);
+  border: 1px solid #E6E9F0;
+}
+
+.crop-btn-ghost:hover {
+  background: #F5F7FA;
+  color: rgba(0, 0, 0, 0.8);
+}
+
+/* ========== SVGA 预览播放器 ========== */
+.svga-preview-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a1a;
+}
+
+.svga-preview-container canvas {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}

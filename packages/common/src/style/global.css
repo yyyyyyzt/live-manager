@@ -1,0 +1,174 @@
+/* ==================== 全局公共样式 ==================== */
+
+/* 基础重置 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* CSS 变量 */
+:root {
+  /* 主色调 */
+  --primary-color: #1C66E5;
+  --primary-light: #366EF4;
+  --primary-hover: #1554C2;
+
+  /* 背景色 */
+  --bg-color-page: #F5F7FA;
+  --bg-color-container: #FFFFFF;
+  --bg-color-secondary: #F7F8FA;
+  --bg-color-tertiary: #F2F3F5;
+
+  /* 文本色 */
+  --text-color-primary: #1D2129;
+  --text-color-secondary: #4E5969;
+  --text-color-tertiary: #86909C;
+  --text-color-placeholder: #C9CDD4;
+
+  /* 边框色 */
+  --stroke-color-primary: #E6E9F0;
+  --stroke-color-secondary: #F0F2F7;
+  --stroke-color-module: #EAEDF2;
+
+  /* 功能色 */
+  --warning-color: #F7BA2A;
+  --warning-bg: #FFF7E6;
+  --error-color: #E34D59;
+  --error-bg: #FFECE8;
+  --success-color: #00B42A;
+  --success-bg: #E8FFEA;
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* ==================== 滚动条样式 ==================== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C9CDD4;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #86909C;
+}
+
+/* ==================== TDesign 组件覆盖 ==================== */
+
+/* 对话框最小高度：不能小于窗口高度 - 96px */
+.t-dialog {
+  max-height: calc(100vh - 96px) !important;
+}
+.t-dialog__body {
+  max-height: calc(100vh - 250px) !important;
+  padding-right: 12px !important;
+}
+
+/* text 变体按钮去除所有交互背景、边框和过渡效果 */
+.t-button--variant-text,
+.t-button--variant-text:hover,
+.t-button--variant-text:focus,
+.t-button--variant-text:active,
+.t-button--variant-text:focus-visible {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+
+.t-button--variant-text::after {
+  display: none !important;
+}
+
+/* ==================== 动画 ==================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ==================== 通用分页样式 ==================== */
+.page-info {
+  font-size: 14px;
+  color: var(--text-color-secondary);
+  padding: 0 8px;
+}
+
+/* ==================== 通用工具类 ==================== */
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 表单字段错误提示（textarea 等不支持 tips 的组件仍需使用） */
+.form-field__error-tip {
+  width: 100%;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--td-error-color, #e34d59);
+  line-height: 20px;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+td span {
+  overflow-wrap: break-word;
+}

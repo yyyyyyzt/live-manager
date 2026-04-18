@@ -1,0 +1,622 @@
+<template>
+  <div class="room-list-page">
+    <!-- 页面头部 -->
+    <div class="room-list-header">
+      <h1 class="room-list-title">直播间管理</h1>
+      <div class="header-actions">
+        <!-- 搜索框 -->
+        <t-input
+          :model-value="searchInput"
+          placeholder="输入房间 ID 搜索"
+          class="gift-search-input"
+          style="width: 220px"
+          clearable
+          :status="getByteLength(searchInput) > ROOM_SEARCH_MAX_BYTES ? 'error' : 'default'"
+          :tips="getByteLength(searchInput) > ROOM_SEARCH_MAX_BYTES ? '输入内容超出长度限制' : ''"
+          @update:model-value="handleSearchInputChange"
+          @enter="handleSearch"
+          @clear="handleClearSearch"
+        >
+          <template #suffixIcon>
+            <SearchIcon style="cursor: pointer" @click="handleSearch" />
+          </template>
+        </t-input>
+        <t-button
+          variant="outline"
+          shape="round"
+          :disabled="refreshing || loading"
+          @click="refreshRooms"
+        >
+          <template #icon>
+            <RefreshIcon :class="{ spinning: refreshing }" />
+          </template>
+          刷新
+        </t-button>
+        <t-button theme="primary" shape="round" @click="isCreateModalVisible = true">
+          <template #icon>
+            <AddIcon />
+          </template>
+          新建直播间
+        </t-button>
+      </div>
+    </div>
+
+    <!-- 房间列表表格区域 -->
+    <t-card class="room-list-card">
+      <!-- 表头 - 固定 -->
+      <div class="room-list-header-fixed">
+        <table class="room-table">
+          <thead>
+            <tr>
+              <th class="col-id">直播间 ID</th>
+              <th class="col-title">直播间标题</th>
+              <th class="col-cover">直播间封面</th>
+              <th class="col-anchor">主播 ID</th>
+              <th class="room-col-time">创建时间</th>
+              <th class="room-col-action">操作</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+      <!-- 表体 - 滚动 -->
+      <div class="room-list-content">
+        <table v-if="!loading && rooms.length > 0" class="room-table">
+          <tbody>
+            <tr v-for="room in rooms" :key="room.RoomId" class="room-row">
+              <td class="col-id">
+                <div class="room-id-cell">
+                  <span class="room-id-text">{{ room.RoomId }}</span>
+                  <CopyIcon class="copy-icon" @click="handleCopyRoomId(room.RoomId)" />
+                </div>
+              </td>
+              <td class="col-title">
+                <span class="room-name-text">{{ room.RoomName || '-' }}</span>
+              </td>
+              <td class="col-cover">
+                <div class="room-cover-cell">
+                  <img :src="room.CoverURL || defaultCoverUrl" :alt="room.RoomName" class="room-cover-image" />
+                </div>
+              </td>
+              <td class="col-anchor">
+                <span class="anchor-name">{{ room.Owner_Account || '-' }}</span>
+              </td>
+              <td class="room-col-time">
+                <span class="create-time">{{ formatTime(room.CreateTime) }}</span>
+              </td>
+              <td class="room-col-action">
+                <div class="action-cell">
+                  <span class="action-link" title="进入房间" @click="handleEnterRoom(room.RoomId)">
+                    <LoginIcon class="action-icon-only" />
+                    <span class="action-text">进入房间</span>
+                  </span>
+                  <span class="action-link" title="房间详情" @click="handleShowDetail(room)">
+                    <InfoCircleIcon class="action-icon-only" />
+                    <span class="action-text">房间详情</span>
+                  </span>
+                  <span class="action-link" title="编辑" @click="handleEditRoom(room)">
+                    <EditIcon class="action-icon-only" />
+                    <span class="action-text">编辑</span>
+                  </span>
+                  <span class="action-link action-link-danger" title="解散" @click="handleDeleteConfirm(room)">
+                    <DeleteIcon class="action-icon-only" />
+                    <span class="action-text">解散</span>
+                  </span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-else-if="loading" class="room-loading-container">
+          <div class="room-loading-spinner" />
+          <span class="room-loading-text">加载中...</span>
+        </div>
+        <div v-else class="room-empty-container">
+          <span class="room-empty-text">暂无直播间数据</span>
+        </div>
+      </div>
+    </t-card>
+
+    <!-- 分页控制 -->
+    <div class="room-list-pagination">
+      <t-button
+        variant="outline"
+        size="small"
+        :disabled="currentPage <= 1"
+        @click="goToPage(1)"
+      >
+        首页
+      </t-button>
+      <t-button
+        variant="outline"
+        size="small"
+        :disabled="currentPage <= 1"
+        @click="goToPage(currentPage - 1)"
+      >
+        上一页
+      </t-button>
+      <span class="page-info">第 {{ currentPage }} 页</span>
+      <t-button
+        variant="outline"
+        size="small"
+        :disabled="!hasMoreData"
+        @click="goToPage(currentPage + 1)"
+      >
+        下一页
+      </t-button>
+    </div>
+
+    <!-- 创建直播间弹窗 -->
+    <CreateRoomModal
+      v-model:visible="isCreateModalVisible"
+      :upload-enabled="uploadEnabled"
+      @success="handleCreateSuccess"
+    />
+
+    <!-- 编辑直播间弹窗 -->
+    <EditRoomModal
+      v-model:visible="isEditModalVisible"
+      :room="editingRoom"
+      :upload-enabled="uploadEnabled"
+      @success="handleEditSuccess"
+    />
+
+    <!-- 确认弹窗 -->
+    <t-dialog
+      v-model:visible="confirmDialogVisible"
+      :header="confirmDialogTitle"
+      :confirm-btn="{ content: '确认解散', theme: 'primary', shape: 'round' }"
+      :cancel-btn="{ shape: 'round' }"
+      @confirm="handleConfirmDelete"
+    >
+      <p>{{ confirmDialogContent }}</p>
+    </t-dialog>
+
+    <!-- 房间信息详情对话框 -->
+    <t-dialog
+      v-model:visible="obsModalVisible"
+      header="房间信息"
+      :width="560"
+      class="room-info-modal"
+    >
+      <div class="room-info-form">
+        <!-- 基本信息 -->
+        <div class="room-info-section">
+          <div class="room-info-section-title">基本信息</div>
+          <div class="room-info-card">
+            <div class="room-info-row">
+              <span class="room-info-label">主播 ID</span>
+              <div class="room-info-value-area">
+                <span class="room-info-value">{{ obsModal.room?.Owner_Account || '-' }}</span>
+                <button
+                  v-if="obsModal.room?.Owner_Account"
+                  class="room-info-copy-btn"
+                  @click="handleObsCopy(obsModal.room.Owner_Account, '直播间主播')"
+                >
+                  <CopyIcon />
+                </button>
+              </div>
+            </div>
+            <div class="room-info-row">
+              <span class="room-info-label">直播间 ID</span>
+              <div class="room-info-value-area">
+                <span class="room-info-value">{{ obsModal.room?.RoomId || '-' }}</span>
+              </div>
+            </div>
+            <div class="room-info-row">
+              <span class="room-info-label">直播间标题</span>
+              <div class="room-info-value-area">
+                <span class="room-info-value">{{ obsModal.room?.RoomName || '-' }}</span>
+              </div>
+            </div>
+            <div class="room-info-row">
+              <span class="room-info-label">直播间封面</span>
+              <div class="room-info-value-area">
+                <span class="room-info-value room-info-value-url">{{ obsModal.room?.CoverURL || '-' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 推流信息 -->
+        <div v-if="obsModal.streamInfo || obsModal.actionLoading === 'stream'" class="room-info-section">
+          <div class="room-info-section-title">推流信息</div>
+          <div class="room-info-card">
+            <template v-if="obsModal.streamInfo">
+              <div class="room-info-row">
+                <span class="room-info-label">服务器地址</span>
+                <div class="room-info-value-area">
+                  <span class="room-info-value room-info-value-url">{{ obsModal.streamInfo.serverUrl }}</span>
+                  <button
+                    class="room-info-copy-btn"
+                    @click="handleObsCopy(obsModal.streamInfo.serverUrl, '服务器地址')"
+                  >
+                    <CopyIcon />
+                  </button>
+                </div>
+              </div>
+              <div class="room-info-row">
+                <span class="room-info-label">推流码</span>
+                <div class="room-info-value-area">
+                  <span class="room-info-value room-info-value-url">{{ obsModal.streamInfo.streamKey }}</span>
+                  <button
+                    class="room-info-copy-btn"
+                    @click="handleObsCopy(obsModal.streamInfo.streamKey, '推流码')"
+                  >
+                    <CopyIcon />
+                  </button>
+                </div>
+              </div>
+            </template>
+            <div v-else class="room-info-row">
+              <span class="room-info-label" style="width: auto">正在获取推流信息...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <t-button variant="outline" shape="round" @click="obsModalVisible = false">关闭</t-button>
+        </div>
+      </template>
+    </t-dialog>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { AddIcon, CopyIcon, LoginIcon, EditIcon, DeleteIcon, RefreshIcon, InfoCircleIcon, SearchIcon } from 'tdesign-icons-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
+import '@live-manager/common/style/room-list.css';
+import { getByteLength, ROOM_SEARCH_MAX_BYTES } from '@live-manager/common';
+import {
+  deleteRoom,
+  getRoomList,
+  getRoomDetail,
+  getStreamInfoAsync,
+  getRobotList,
+  getSeatList,
+} from '@/api/room';
+import type { RoomListItem, StreamInfo } from '@/types';
+import { getUploadConfig } from '@/api/upload';
+import { copyText } from '@/utils';
+import { defaultCoverUrl } from '@live-manager/common';
+import CreateRoomModal from '@/components/CreateRoomModal.vue';
+import EditRoomModal from '@/components/EditRoomModal.vue';
+
+type Room = RoomListItem;
+
+const PAGE_SIZE = 20;
+
+const router = useRouter();
+const route = useRoute();
+
+const rooms = ref<Room[]>([]);
+const loading = ref(false);
+const isCreateModalVisible = ref(false);
+const isEditModalVisible = ref(false);
+const editingRoom = ref<Room | null>(null);
+
+// 确认弹窗
+const confirmDialogVisible = ref(false);
+const confirmDialogTitle = ref('');
+const confirmDialogContent = ref('');
+const pendingDeleteRoomId = ref('');
+
+// 分页状态
+const currentPage = ref(1);
+const hasMoreData = ref(true);
+const pageCursors = ref<Map<number, string>>(new Map([[1, '']]));
+const refreshing = ref(false);
+
+// 搜索状态
+const searchInput = ref('');
+const handleSearchInputChange = (value: string | number | undefined) => {
+  searchInput.value = String(value ?? '');
+};
+
+// 上传配置
+const uploadEnabled = ref(false);
+
+// OBS 详情弹窗
+const obsModalVisible = ref(false);
+const obsModal = reactive<{
+  room: Room | null;
+  streamInfo: StreamInfo | null;
+  actionLoading: string;
+}>({
+  room: null,
+  streamInfo: null,
+  actionLoading: '',
+});
+
+// 格式化时间
+const formatTime = (timestamp: number) => {
+  if (!timestamp) return '-';
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).replace(/\//g, '-');
+};
+
+// 加载房间列表
+const loadRooms = async (page: number) => {
+  loading.value = true;
+  try {
+    const nextCursor = pageCursors.value.get(page) || '';
+    const response = await getRoomList({ next: nextCursor, count: PAGE_SIZE, sortDirection: 'descend' });
+
+    if (response.ErrorCode !== 0) {
+      console.error('获取房间列表失败:', response.ErrorInfo);
+      MessagePlugin.error(response.ErrorInfo || '获取房间列表失败');
+      return;
+    }
+
+    const roomList = response.Response?.RoomList || [];
+    const next = response.Response?.Next || '';
+
+    rooms.value = roomList;
+    currentPage.value = page;
+
+    if (next && roomList.length > 0) {
+      pageCursors.value.set(page + 1, next);
+    }
+
+    hasMoreData.value = !!next && roomList.length === PAGE_SIZE;
+  } catch (error) {
+    console.error('加载房间列表失败:', error);
+    MessagePlugin.error('加载房间列表失败');
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 刷新列表
+const refreshRooms = async () => {
+  refreshing.value = true;
+  try {
+    await loadRooms(currentPage.value);
+  } finally {
+    refreshing.value = false;
+  }
+};
+
+// 分页导航
+const goToPage = (page: number) => {
+  if (page < 1) return;
+  if (page > currentPage.value && !hasMoreData.value) return;
+  loadRooms(page);
+};
+
+// 进入房间
+const handleEnterRoom = (roomId: string) => {
+  // 保存分页游标到 sessionStorage，以便返回时恢复
+  try {
+    sessionStorage.setItem('roomList_currentPage', String(currentPage.value));
+    sessionStorage.setItem('roomList_pageCursors', JSON.stringify(Array.from(pageCursors.value.entries())));
+  } catch { /* sessionStorage 不可用时静默忽略 */ }
+  router.push({
+    path: `/room-control/${roomId}`,
+  });
+};
+
+// 复制房间 ID
+const handleCopyRoomId = (roomId: string) => {
+  copyText(roomId);
+  MessagePlugin.success('直播间ID已复制');
+};
+
+// 编辑房间
+const handleEditRoom = (room: Room) => {
+  editingRoom.value = room;
+  isEditModalVisible.value = true;
+};
+
+// 删除确认
+const handleDeleteConfirm = (room: Room) => {
+  confirmDialogTitle.value = '解散直播间确认';
+  confirmDialogContent.value = `解散后直播间将被永久删除，确认解散房间「${room.RoomName}」吗？`;
+  pendingDeleteRoomId.value = room.RoomId;
+  confirmDialogVisible.value = true;
+};
+
+// 确认删除
+const handleConfirmDelete = async () => {
+  if (!pendingDeleteRoomId.value) return;
+
+  try {
+    await deleteRoom(pendingDeleteRoomId.value);
+    MessagePlugin.success('解散直播间成功');
+    // 如果当前页是最后一页且只剩最后一个房间，跳转到上一页
+    const isLastPage = !hasMoreData.value;
+    if (isLastPage && rooms.value.length <= 1 && currentPage.value > 1) {
+      loadRooms(currentPage.value - 1);
+    } else {
+      loadRooms(currentPage.value);
+    }
+  } catch (error) {
+    console.error('解散直播间失败:', error);
+    MessagePlugin.error('解散直播间失败');
+  } finally {
+    pendingDeleteRoomId.value = '';
+    confirmDialogVisible.value = false;
+  }
+};
+
+// 搜索房间
+const handleSearch = async () => {
+  const input = searchInput.value.trim();
+  if (!input) {
+    return;
+  }
+  if (getByteLength(input) > ROOM_SEARCH_MAX_BYTES) {
+    MessagePlugin.error('输入内容太长');
+    return;
+  }
+
+  const roomId = input;
+
+  loading.value = true;
+  try {
+    const response = await getRoomDetail(roomId);
+
+    if (response.ErrorCode !== 0) {
+      MessagePlugin.error(response.ErrorInfo || '未找到该直播间');
+      return;
+    }
+
+    const roomInfo = response.Response?.RoomInfo;
+    if (roomInfo) {
+      rooms.value = [roomInfo];
+      currentPage.value = 1;
+      hasMoreData.value = false;
+      MessagePlugin.success('搜索成功');
+    } else {
+      MessagePlugin.error('未找到该直播间');
+    }
+  } catch (error: any) {
+    console.error('搜索直播间失败:', error);
+    MessagePlugin.error(`搜索失败: ${error.ErrorInfo || error.message || '网络错误'}`);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 清空搜索并刷新列表
+const handleClearSearch = () => {
+  searchInput.value = '';
+  // 重置分页状态
+  pageCursors.value = new Map([[1, '']]);
+  currentPage.value = 1;
+  hasMoreData.value = true;
+  // 刷新列表
+  loadRooms(1);
+};
+
+// 显示详情
+const handleShowDetail = async (room: Room) => {
+  obsModal.room = room;
+  obsModal.streamInfo = null;
+  obsModal.actionLoading = '';
+  obsModalVisible.value = true;
+
+  try {
+    const [robotList, seatMembers] = await Promise.all([
+      getRobotList(room.RoomId).then(res => res.Response?.RobotList_Account || []).catch(() => [] as string[]),
+      getSeatList(room.RoomId).then(res => {
+        const members = new Set<string>();
+        res.Response?.SeatList?.forEach(seat => {
+          if (seat.Member_Account) members.add(seat.Member_Account);
+        });
+        return members;
+      }).catch(() => new Set<string>()),
+    ]);
+
+    const anchorId = room.Owner_Account || '';
+    const robotId = `${anchorId}_obs`;
+    const hasRobot = robotList.includes(robotId);
+    const onSeat = seatMembers.has(robotId);
+
+    if (hasRobot && onSeat) {
+      await autoGenerateStream(room, robotId);
+    }
+  } catch (error: any) {
+    console.error('获取房间详情失败:', error);
+  }
+};
+
+// 自动生成推流链接（使用机器人 ID）
+const autoGenerateStream = async (room: Room, robotId: string) => {
+  obsModal.actionLoading = 'stream';
+  try {
+    const pushInfo = await getStreamInfoAsync(room.RoomId, robotId);
+    if (pushInfo) {
+      obsModal.streamInfo = { serverUrl: pushInfo.ServerUrl, streamKey: pushInfo.StreamKey };
+    } else {
+      MessagePlugin.error('获取推流信息失败');
+    }
+  } catch (error: any) {
+    MessagePlugin.error(`获取推流信息失败: ${error.ErrorInfo || error.message || '网络错误'}`);
+  } finally {
+    obsModal.actionLoading = '';
+  }
+};
+
+// 复制
+const handleObsCopy = async (text: string, label: string) => {
+  await copyText(text);
+  MessagePlugin.success(`${label}已复制到剪贴板`);
+};
+
+// 从详情编辑
+const handleEditFromDetail = () => {
+  obsModalVisible.value = false;
+  if (obsModal.room) {
+    editingRoom.value = obsModal.room;
+    isEditModalVisible.value = true;
+  }
+};
+
+// 创建成功
+const handleCreateSuccess = () => {
+  isCreateModalVisible.value = false;
+  refreshRooms();
+};
+
+// 编辑成功
+const handleEditSuccess = (updatedFields: { roomName: string; coverUrl: string }) => {
+  isEditModalVisible.value = false;
+  if (editingRoom.value) {
+    rooms.value = rooms.value.map(r => {
+      if (r.RoomId === editingRoom.value?.RoomId) {
+        return {
+          ...r,
+          RoomName: updatedFields.roomName,
+          CoverURL: updatedFields.coverUrl,
+        };
+      }
+      return r;
+    });
+  }
+};
+
+// 初始化
+onMounted(async () => {
+  try {
+    const config = await getUploadConfig();
+    uploadEnabled.value = config.enabled;
+  } catch {}
+
+  // 从 sessionStorage 恢复分页状态（游标 + 页码）
+  let pageToLoad = 1;
+  try {
+    const savedPage = sessionStorage.getItem('roomList_currentPage');
+    const savedCursors = sessionStorage.getItem('roomList_pageCursors');
+
+    // 清除已读取的状态（一次性恢复）
+    sessionStorage.removeItem('roomList_currentPage');
+    sessionStorage.removeItem('roomList_pageCursors');
+
+    if (savedPage && savedCursors) {
+      const page = Number(savedPage);
+      if (page > 0) {
+        const cursors: [number, string][] = JSON.parse(savedCursors);
+        pageCursors.value = new Map(cursors);
+        pageToLoad = page;
+      }
+    }
+  } catch { /* 解析失败时回退到第1页 */ }
+
+  loadRooms(pageToLoad);
+});
+</script>
+
+<style>
+/* 公共样式已从 @live-manager/common/style/room-list 引入 */
+</style>

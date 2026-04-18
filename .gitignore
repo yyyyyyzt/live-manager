@@ -1,0 +1,13 @@
+node_modules
+.DS_Store
+
+.history
+.codebuddy
+.vibe
+dist
+*.md
+!README.md
+.vscode
+
+# 前端构建产物（由 live-monitor-react build 生成）
+packages/server/public

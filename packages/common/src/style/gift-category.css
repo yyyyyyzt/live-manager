@@ -1,0 +1,472 @@
+/* ==================== 类别管理页面公共样式 ==================== */
+
+/* 类别管理页面容器 */
+.gift-category-container {
+  padding: 24px;
+  background: #F5F7FA;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 900px;
+  flex: 1;
+  height: 100%;
+}
+
+/* 页面头部 */
+.gift-category-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.gift-category-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.back-btn {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: white !important;
+  border: 1px solid #ECEFF6 !important;
+  border-radius: 10px !important;
+  cursor: pointer;
+  color: #22262E !important;
+  padding: 0 !important;
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background: #F5F7FA;
+}
+
+.gift-category-title-section h1 {
+  font-size: 20px;
+  font-weight: 500;
+  color: #22262E;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 0;
+}
+
+/* 操作按钮区域 */
+.gift-category-actions {
+  display: flex;
+  align-items: center;
+}
+
+.gift-category-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 新建类别按钮容器 */
+.create-category-btn-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.create-category-btn-wrapper.disabled button {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.create-category-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 6px;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.create-category-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 16px;
+  border: 6px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.75);
+}
+
+.create-category-btn-wrapper.disabled:hover .create-category-tooltip {
+  display: block;
+}
+
+/* 表格区域 */
+.gift-category-table-wrapper {
+  background: white;
+  border-radius: 16px;
+  overflow-y: auto;
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 0;
+}
+
+/* 类别名称 */
+.category-name {
+  font-weight: 400;
+}
+
+/* 类别描述 */
+.category-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 380px;
+}
+
+/* 多语言配置 - 语言标签 */
+.category-lang-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.category-lang-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  background: #EBF2FF;
+  color: #1C66E5;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.category-lang-tag:hover {
+  background: #D6E4FF;
+}
+
+.category-lang-edit-icon {
+  color: #99A2B2;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.category-lang-edit-icon:hover {
+  color: #1C66E5;
+}
+
+.category-lang-empty {
+  color: #99A2B2;
+}
+
+/* 礼物数量 */
+.category-count {
+  color: #0F1014;
+}
+
+/* 操作按钮 */
+.category-actions {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.action-text-btn {
+  background: transparent;
+  border: none;
+  color: #1C66E5;
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.2s;
+}
+
+.action-text-btn:hover {
+  opacity: 0.8;
+}
+
+/* ==================== 多语言配置弹窗样式 - 表格模式 ==================== */
+
+.category-lang-config-container {
+  padding: 0 24px 24px;
+}
+
+.category-lang-config-info-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #EBF2FF;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #4F586B;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.5;
+}
+
+.category-lang-config-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  border: 1px solid #EAEDF2;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.category-lang-config-table th {
+  font-size: 13px;
+  font-weight: 500;
+  color: #99A2B2;
+  text-align: left;
+  padding: 10px 16px;
+  border-bottom: 1px solid #EAEDF2;
+  white-space: nowrap;
+  background: #F9FAFC;
+}
+
+.category-lang-config-table td {
+  font-size: 14px;
+  color: #0F1014;
+  padding: 14px 16px;
+  border-bottom: 1px solid #EAEDF2;
+  vertical-align: middle;
+}
+
+.category-lang-config-table tr:last-child td {
+  border-bottom: none;
+}
+
+.category-lang-table-cell-name {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.category-lang-table-cell-desc {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.category-lang-table-empty {
+  color: #99A2B2;
+  font-style: italic;
+}
+
+.category-lang-table-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.category-lang-table-actions .t-link {
+  text-decoration: none;
+}
+
+.category-lang-table-actions .t-link .t-link__content {
+  text-decoration: none;
+}
+
+.category-lang-table-actions .t-link:hover .t-link__content {
+  text-decoration: none;
+}
+
+.category-lang-table-action-link {
+  background: none;
+  border: none;
+  color: var(--td-brand-color, #0052D9);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.2s;
+}
+
+.category-lang-table-action-link:hover {
+  opacity: 0.7;
+}
+
+.category-lang-table-action-danger {
+  color: var(--td-error-color, #E34D59);
+}
+
+.category-lang-table-action-link:disabled,
+.category-lang-table-action-danger:disabled {
+  color: var(--td-text-color-disabled, #C5CDD7);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ==================== 原生表格样式 ==================== */
+
+/* 表格容器 - 表头固定，内容滚动 */
+.category-list-header-fixed {
+  flex-shrink: 0;
+  overflow: hidden;
+  padding-right: 12px;
+}
+
+.category-list-content {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+/* 原生表格 */
+.category-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.category-table th {
+  font-size: 14px;
+  font-weight: 500;
+  color: #99A2B2;
+  text-align: left;
+  padding: 16px 8px;
+  border-bottom: 0.5px solid #EAEDF2;
+  white-space: nowrap;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.category-table td {
+  font-size: 14px;
+  color: #0F1014;
+  padding: 16px 8px;
+  border-bottom: 0.5px solid #EAEDF2;
+  vertical-align: middle;
+}
+
+.category-table tr:hover td {
+  background: #F9FAFC;
+}
+
+/* 列宽定义 */
+.category-table .col-id {
+  width: 120px;
+}
+
+.category-table .col-name {
+  width: 140px;
+}
+
+.category-table .col-desc {
+  width: 180px;
+}
+
+.category-table .col-languages {
+  width: 200px;
+}
+
+.category-table .col-count {
+  width: 80px;
+}
+
+.category-table .col-actions {
+  width: 100px;
+}
+
+/* 加载状态 */
+.category-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+  gap: 16px;
+}
+
+.category-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #E6E9F0;
+  border-top-color: #1C66E5;
+  border-radius: 50%;
+  animation: category-spin 0.8s linear infinite;
+}
+
+@keyframes category-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.category-loading-text {
+  color: #8F959E;
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* 空状态 */
+.category-empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+.category-empty-text {
+  color: #8F959E;
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* 礼物ID - 带复制按钮 */
+.gift-id {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gift-id-copy {
+  cursor: pointer;
+  color: #99A2B2;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+
+.gift-id-copy:hover {
+  color: #1C66E5;
+}
+
+/* ==================== TDesign Form 适配 ==================== */
+
+/* 类别弹窗 TDesign Form 适配 - 覆盖 inline 布局默认样式 */
+.category-dialog .t-form-inline .t-form__item {
+  display: block;
+  margin: 0 0 16px 0;
+  min-width: unset;
+}
+
+.category-dialog .t-form-inline .t-form__item:last-child {
+  margin-bottom: 0;
+}

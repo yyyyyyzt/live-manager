@@ -1,0 +1,164 @@
+/* 编辑直播间弹窗样式 - 使用 TDesign Form 组件 */
+
+/* 编辑表单 */
+.edit-room-form {
+  display: flex;
+  flex-direction: column;
+}
+
+/* TDesign Form 适配 - 覆盖 inline 布局默认的 margin:0 和 inline-block */
+.edit-room-modal .t-form-inline .t-form__item {
+  display: block;
+  margin: 0 0 16px 0;
+  min-width: unset;
+}
+
+.edit-room-modal .t-form-inline .t-form__item:last-child {
+  margin-bottom: 0;
+}
+
+/* 输入框内的字节计数后缀 */
+.input-suffix-count {
+  color: rgba(0, 0, 0, 0.4);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.input-suffix-count.byte-overflow {
+  color: #e54545;
+}
+
+/* ImageUpload 在 FormItem 内自适应宽度 */
+.edit-room-modal .t-form__controls-content .image-upload-container {
+  width: 100%;
+}
+
+/* 自定义信息折叠/展开区域 */
+.custom-info-section {
+  margin-top: 4px;
+}
+
+.custom-info-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+  padding: 4px 0;
+  transition: color 0.2s;
+}
+
+.custom-info-toggle:hover {
+  color: rgba(0, 0, 0, 0.9);
+}
+
+.custom-info-toggle .t-icon {
+  transition: transform 0.2s;
+}
+
+.custom-info-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #E3F1FC;
+  color: #1C66E5;
+  font-size: 12px;
+  line-height: 1;
+  margin-left: 4px;
+}
+
+/* 自定义信息区域在 FormItem 内自适应 */
+.edit-room-modal .t-form__controls-content .custom-info-container {
+  width: 100%;
+}
+
+/* 自定义信息容器 */
+.custom-info-container {
+  background: #F9FAFC;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  margin-top: 8px;
+}
+
+.custom-info-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.custom-input-wrap {
+  position: relative;
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.custom-input-wrap.custom-value-wrap {
+  width: auto;
+  flex: 1;
+}
+
+/* 自定义信息输入框右下角字节计数 */
+.custom-input-byte-count {
+  display: block;
+  text-align: right;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.4);
+  margin-top: 2px;
+  line-height: 1;
+}
+
+.custom-input-byte-count.byte-overflow {
+  color: #e54545;
+}
+
+.custom-key {
+  width: 100%;
+  background: white;
+  border: 1px solid #ECEFF6;
+}
+
+.custom-value {
+  width: 100%;
+  flex: 1;
+  background: white;
+  border: 1px solid #ECEFF6;
+}
+
+/* 自定义信息 - 输入框错误状态 */
+.custom-info-row .t-input--error {
+  border-color: #e54545;
+}
+
+/* 删除自定义信息按钮 */
+.remove-custom-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  color: rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  padding: 0;
+  border-radius: 6px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.remove-custom-info-btn:hover {
+  background: #F5F7FA;
+  color: #E54545;
+}
+
+

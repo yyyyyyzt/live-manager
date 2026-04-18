@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TRTC播放测试</title>
+    <script src="https://web.sdk.qcloud.com/trtc/webrtc/doc/zh-cn/trtc.js"></script>
+</head>
+<body>
+    <h1>TRTC播放测试</h1>
+    <div>
+        <input type="text" id="roomId" placeholder="输入房间号" value="117195">
+        <button onclick="startTest()">开始测试</button>
+        <button onclick="stopTest()">停止测试</button>
+    </div>
+    <div id="player" style="width:640px;height:480px;background:#000;margin:20px 0;"></div>
+    <div id="log"></div>
+    
+    <script>
+        let trtc = null;
+        let player = null;
+        
+        function log(msg) {
+            document.getElementById('log').innerHTML += `<p>${new Date().toLocaleTimeString()}: ${msg}</p>`;
+            console.log(msg);
+        }
+        
+        async function startTest() {
+            const roomId = document.getElementById('roomId').value;
+            log(`开始测试房间: ${roomId}`);
+            
+            trtc = TRTC.create();
+            
+            try {
+                await trtc.enterRoom({
+                    sdkAppId: 1400704311,
+                    userId: 'test_user_' + Date.now(),
+                    userSig: 'eJwtzMELgjAQBuC-W7Mdhz2nDaOEaBQRaAhW2iBgUyFtq1Uq6cbevXx-9-6F7ZtkQ2drjjAOgM2GTcY*Wqpo4Bt19sgFFxHi9DfmWjhHhiUhAkjAKAzHp6W79Sol8FjGKEa1b0e19xhQAUwNOvv4sjDRZ3uyabl*Zbl28*ehUViq3UaselKt6PVFaVNkSi-Y7w-V-jIB'
+                });
+                
+                player = document.getElementById('player');
+                await trtc.startRemoteVideo({
+                    userId: roomId,
+                    videoViewDomID: 'player'
+                });
+                
+                log('✅ 播放启动成功');
+            } catch (error) {
+                log('❌ 播放失败: ' + error.message);
+            }
+        }
+        
+        async function stopTest() {
+            if (trtc) {
+                await trtc.exitRoom();
+                log('已停止播放');
+            }
+        }
+    </script>
+</body>
+</html>

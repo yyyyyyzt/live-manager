@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* 浅色主题 - Tailwind 用 */
+    --background: 255 255 255;
+    --background-secondary: 245 247 250;
+    --background-tertiary: 236 239 244;
+    --foreground: 26 26 26;
+    --foreground-secondary: 78 89 105;
+    --foreground-muted: 134 144 156;
+
+    --primary: 0 82 217;
+    --primary-hover: 54 110 244;
+    --primary-light: 97 141 255;
+
+    --success: 0 168 112;
+    --warning: 237 123 47;
+    --error: 227 77 89;
+    --disabled: 166 166 166;
+
+    --card: 255 255 255;
+    --card-foreground: 26 26 26;
+
+    --border: 230 233 240;
+  }
+}
+
+/* TDesign 浅色主题覆盖（Vue3 特有） */
+.t-menu--light {
+  background: rgb(var(--background)) !important;
+}
+
+.t-layout__sider {
+  background: rgb(var(--background-secondary)) !important;
+}
+
+/* 公共全局样式已从 @live-manager/common/style/global 引入 */

@@ -1,0 +1,13 @@
+/// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  readonly VITE_SDK_APP_ID: string;
+  readonly VITE_SECRET_KEY: string;
+  readonly VITE_API_BASE_URL: string;
+  readonly VITE_DEFAULT_COVER_URL?: string;
+  readonly VITE_DEFAULT_AVATAR_URL?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
