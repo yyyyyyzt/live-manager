@@ -15,12 +15,12 @@ function bad(res, message, status = 400) {
 /**
  * 观众端 / 网关上报待审评论
  * POST /api/moderation/comments
- * body: { roomId, senderId, text, clientMsgId? }
+ * body: { roomId, senderId, text, clientMsgId?, messageId?, timestamp? }
  */
 router.post('/comments', (req, res) => {
   try {
-    const { roomId, senderId, text, clientMsgId } = req.body || {};
-    const result = moderationStore.enqueue({ roomId, senderId, text, clientMsgId });
+    const { roomId, senderId, text, clientMsgId, messageId, timestamp } = req.body || {};
+    const result = moderationStore.enqueue({ roomId, senderId, text, clientMsgId, messageId, timestamp });
     if (result.duplicate) {
       return ok(res, { id: result.id, duplicate: true });
     }

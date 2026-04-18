@@ -30,6 +30,8 @@ import {
   isUrlOverrideMode,
 } from "../api/auth";
 import { DIALOG_WIDTH, getErrorMessage, defaultCoverUrl } from "@live-manager/common";
+import { copyText } from "../utils";
+import { buildAnchorLiveEntryUrl } from "../utils/anchorEntry";
 import "@live-manager/common/components/user-action-dropdown/user-action-dropdown.css";
 import "./RoomControl.css";
 
@@ -782,6 +784,22 @@ export default function RoomControl() {
     resolveAnchorAvatarUrl(currentLive?.liveOwner) ||
     roomInfo?.anchor.avatar;
 
+  const anchorEntryUrl = useMemo(() => {
+    const rid = roomId || roomInfo?.id;
+    if (!rid || !anchorUserId) return "";
+    return buildAnchorLiveEntryUrl(rid, anchorUserId);
+  }, [roomId, roomInfo?.id, anchorUserId]);
+
+  const handleCopyAnchorEntry = async () => {
+    if (!anchorEntryUrl) return;
+    try {
+      await copyText(anchorEntryUrl);
+      Message.success("主播入口链接已复制");
+    } catch (e: unknown) {
+      Message.error(e instanceof Error ? e.message : "复制失败");
+    }
+  };
+
   // 判断是否为语音房间（roomId 以 voice_ 开头）- 必须在 early return 之前声明
   const isVoiceRoom = useMemo(() => roomId?.startsWith("voice_") || false, [roomId]);
 
@@ -833,6 +851,20 @@ export default function RoomControl() {
               {liveEndedOverlayVisible ? '直播已结束' : currentLive?.liveName || roomInfo?.title || "正在加载..."}
             </span>
           </div>
+
+          {anchorEntryUrl && (
+            <div className="anchor-entry-banner">
+              <div className="anchor-entry-banner__text">
+                <span className="anchor-entry-banner__label">主播入口（占位页）</span>
+                <code className="anchor-entry-banner__url" title={anchorEntryUrl}>
+                  {anchorEntryUrl}
+                </code>
+              </div>
+              <Button size="small" variant="outline" onClick={() => void handleCopyAnchorEntry()}>
+                复制链接
+              </Button>
+            </div>
+          )}
 
           <div className="video-stage">
             {/* 虚化背景层 */}

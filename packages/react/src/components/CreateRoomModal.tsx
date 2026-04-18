@@ -6,6 +6,7 @@ import { createRoom, addRobot, importAccount, pickUserOnSeat, getRobotList, getS
 import ImageUpload from './ImageUpload';
 import type { ImageUploadRef } from './ImageUpload';
 import { copyText } from '../utils';
+import { buildAnchorLiveEntryUrl } from '../utils/anchorEntry';
 import { FormLayout, FormField } from './FormField';
 import { DIALOG_WIDTH, resolveImageUploadUrl, ImageUploadResolveError } from '@live-manager/common';
 import type { SeatTemplate, StreamInfo } from '../types/room';
@@ -87,6 +88,8 @@ export default function CreateRoomModal({ visible, onClose, onSuccess, uploadEna
   const [obsSetupError, setObsSetupError] = useState('');
   const [streamInfo, setStreamInfo] = useState<StreamInfo | null>(null);
   const [streamInfoError, setStreamInfoError] = useState('');
+  /** 创建成功页展示「主播入口」占位链接 */
+  const [anchorEntrySnapshot, setAnchorEntrySnapshot] = useState<{ roomId: string; anchorUserId: string } | null>(null);
 
   // 封面延迟上传相关
   const coverUploadRef = useRef<ImageUploadRef>(null);
@@ -148,6 +151,7 @@ export default function CreateRoomModal({ visible, onClose, onSuccess, uploadEna
     setStreamInfo(null);
     setStreamInfoError('');
     setHasPendingCover(false);
+    setAnchorEntrySnapshot(null);
     // 清理 ImageUpload 组件内部状态（取消验证、清理缓存预览）
     coverUploadRef.current?.reset();
   };
@@ -248,6 +252,7 @@ export default function CreateRoomModal({ visible, onClose, onSuccess, uploadEna
       if (response.ErrorCode === 0 || response.ErrorCode === undefined) {
         setStreamInfo(null);
         setStreamInfoError('');
+        setAnchorEntrySnapshot({ roomId, anchorUserId: anchorId });
 
         let obsConfiguredSuccessfully = !useObsStreaming;
 
@@ -641,6 +646,37 @@ export default function CreateRoomModal({ visible, onClose, onSuccess, uploadEna
               </p>
             )}
           </div>
+
+          {anchorEntrySnapshot && (
+            <div className="create-success-section create-success-anchor-entry">
+              <div className="create-success-section-title">主播入口（预览）</div>
+              <p className="create-success-anchor-entry-hint">
+                将下列链接发给主播；页面为同仓占位，开播能力待后续接入。主播账号需由服务端{' '}
+                <code>/api/get_user_sig</code> 按 <code>anchorUserId</code> 签发 UserSig。
+              </p>
+              <div className="stream-info-item">
+                <div className="stream-info-label">
+                  <span>占位 URL</span>
+                  <Button
+                    variant="text"
+                    size="small"
+                    icon={<FileCopyIcon size={14} />}
+                    onClick={() =>
+                      handleCopy(
+                        buildAnchorLiveEntryUrl(anchorEntrySnapshot.roomId, anchorEntrySnapshot.anchorUserId),
+                        '主播入口链接'
+                      )
+                    }
+                  >
+                    复制
+                  </Button>
+                </div>
+                <code className="stream-info-value create-success-anchor-entry-url">
+                  {buildAnchorLiveEntryUrl(anchorEntrySnapshot.roomId, anchorEntrySnapshot.anchorUserId)}
+                </code>
+              </div>
+            </div>
+          )}
 
           {streamInfo && (
             <div className="create-success-section">

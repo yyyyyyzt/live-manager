@@ -409,6 +409,26 @@
   color: #22262E;
 }
 
+.create-success-anchor-entry-hint {
+  font-size: 13px;
+  color: #86909c;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.create-success-anchor-entry-hint code {
+  font-size: 12px;
+  padding: 0 4px;
+  background: #f3f3f3;
+  border-radius: 4px;
+}
+
+.create-success-anchor-entry-url {
+  display: block;
+  white-space: normal;
+  word-break: break-all;
+}
+
 /* 推流信息样式 */
 .stream-info-content {
   display: flex;

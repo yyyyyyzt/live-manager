@@ -120,6 +120,41 @@
   color: #333;
 }
 
+.anchor-entry-banner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: #f7f9fc;
+  border: 1px solid #e8ecf4;
+  border-radius: 8px;
+}
+
+.anchor-entry-banner__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.anchor-entry-banner__label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4e5969;
+  margin-bottom: 4px;
+}
+
+.anchor-entry-banner__url {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #1c66e5;
+  word-break: break-all;
+  white-space: normal;
+  background: transparent;
+}
+
 .video-stage {
   flex: 1;
   background: #2a2a2a;

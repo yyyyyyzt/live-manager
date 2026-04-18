@@ -4,7 +4,7 @@
  */
 const { randomUUID } = require('crypto');
 
-/** @typedef {{ id: string, roomId: string, clientMsgId?: string, senderId: string, text: string, createdAt: number }} PendingItem */
+/** @typedef {{ id: string, roomId: string, messageId?: string, clientMsgId?: string, senderId: string, text: string, createdAt: number }} PendingItem */
 /** @typedef {PendingItem & { approvedAt: number }} PublishedItem */
 
 /** @type {Map<string, PendingItem[]>} */
@@ -23,11 +23,11 @@ function getPublishedList(roomId) {
 }
 
 /**
- * @param {{ roomId: string, senderId: string, text: string, clientMsgId?: string }} input
+ * @param {{ roomId: string, senderId: string, text: string, clientMsgId?: string, messageId?: string, timestamp?: number }} input
  * @returns {{ id: string, duplicate?: boolean }}
  */
 function enqueue(input) {
-  const { roomId, senderId, text, clientMsgId } = input;
+  const { roomId, senderId, text, clientMsgId, messageId, timestamp } = input;
   if (!roomId || !senderId || !text) {
     throw new Error('roomId, senderId, text are required');
   }
@@ -39,13 +39,15 @@ function enqueue(input) {
     }
   }
   const id = randomUUID();
+  const createdAt = typeof timestamp === 'number' && Number.isFinite(timestamp) ? timestamp : Date.now();
   const item = {
     id,
     roomId,
+    messageId: messageId ? String(messageId) : undefined,
     clientMsgId: clientMsgId || undefined,
     senderId: String(senderId),
     text: String(text).slice(0, 4000),
-    createdAt: Date.now(),
+    createdAt,
   };
   const list = pendingByRoom.get(roomId) || [];
   list.push(item);
