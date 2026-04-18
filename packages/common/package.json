@@ -1,0 +1,27 @@
+{
+  "name": "@live-manager/common",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types/index.ts",
+    "./utils": "./src/utils/index.ts",
+    "./utils/anchor": "./src/utils/anchor.ts",
+    "./utils/image-upload": "./src/utils/image-upload.ts",
+    "./config": "./src/config/index.ts",
+    "./i18n": "./src/i18n/index.ts",
+    "./style/*": "./src/style/*",
+    "./components/*": "./src/components/*"
+  },
+  "dependencies": {
+    "axios": "^1.13.2",
+    "aegis-web-sdk": "^1.5.8",
+    "svgaplayerweb": "^2.3.2"
+  },
+  "devDependencies": {
+    "typescript": "~5.7.2"
+  }
+}

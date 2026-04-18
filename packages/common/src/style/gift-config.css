@@ -1,0 +1,708 @@
+/* ==================== 礼物配置页面公共样式 ==================== */
+
+.gift-config-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 0;
+  min-height: 0;
+  min-width: 1300px;
+  flex: 1;
+  height: 100%;
+}
+
+/* 页面头部 */
+.gift-config-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.gift-config-title {
+  font-size: 20px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
+  color: #22262E;
+  margin: 0;
+}
+
+.gift-config-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gift-config-actions button {
+  display: flex;
+  align-items: center;
+}
+
+/* 礼物列表卡片 - 使用组合选择器提高特异性，避免 CSS 加载顺序导致 TDesign 样式覆盖 */
+.gift-list-card.t-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: none;
+  border: none;
+  overflow: hidden;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* TDesign Card body - 确保内部 flex 布局支持滚动 */
+.gift-list-card .t-card__body {
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 表头固定区域 */
+.gift-list-header-fixed {
+  flex-shrink: 0;
+  overflow: hidden;
+  padding-right: 12px;
+}
+
+/* 表格内容区域 - 滚动容器 */
+.gift-list-content {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+/* 原生表格样式 */
+.gift-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.gift-table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: #99A2B2;
+  border-bottom: 1px solid #EAEDF2;
+  background: #fff;
+  white-space: nowrap;
+}
+
+.gift-table td {
+  padding: 16px;
+  border-bottom: 1px solid #EAEDF2;
+  vertical-align: middle;
+  font-size: 14px;
+  color: #0F1014;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.gift-row:hover {
+  background: #F5F7FA;
+}
+
+
+.gift-col-lang {
+  width: 180px;
+}
+
+.gift-col-time {
+  width: 180px;
+}
+
+.gift-col-action {
+  width: 160px;
+}
+
+/* 加载中 */
+.gift-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+  gap: 16px;
+}
+
+.gift-loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #E8ECF2;
+  border-top-color: #1A6BF5;
+  border-radius: 50%;
+  animation: gift-spin 0.8s linear infinite;
+}
+
+@keyframes gift-spin {
+  to { transform: rotate(360deg); }
+}
+
+.gift-loading-text {
+  font-size: 14px;
+  color: #99A2B2;
+}
+
+/* 空状态 */
+.gift-empty-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+}
+
+.gift-empty-text {
+  font-size: 14px;
+  color: #99A2B2;
+}
+
+/* 礼物ID */
+.gift-id {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #0F1014;
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.gift-id-copy {
+  cursor: pointer;
+  color: #99A2B2;
+}
+
+.gift-id-copy:hover {
+  color: #1C66E5;
+}
+
+/* 礼物缩略图 */
+.gift-thumbnail {
+  width: 70px;
+  height: 60px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #F5F7FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gift-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 礼物名称 */
+.gift-name {
+  color: #0F1014;
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* 礼物类别 */
+.gift-category-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #0F1014;
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: pointer;
+}
+
+.gift-category-edit-icon {
+  color: #99A2B2;
+  opacity: 0;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+.gift-category-cell:hover .gift-category-edit-icon {
+  opacity: 1;
+  color: #1C66E5;
+}
+
+/* 多语言配置 - Tag 样式 */
+.gift-lang-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.gift-lang-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  height: 24px;
+  background: #F0F5FF;
+  border: 1px solid #D6E4FF;
+  border-radius: 4px;
+  color: #1C66E5;
+  font-size: 12px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.gift-lang-tag:hover {
+  background: #D6E4FF;
+  border-color: #1C66E5;
+}
+
+.gift-lang-edit-icon {
+  color: #99A2B2;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.gift-lang-edit-icon:hover {
+  color: #1C66E5;
+}
+
+.gift-lang-empty {
+  color: #99A2B2;
+  font-size: 14px;
+}
+
+/* 礼物价格 */
+.gift-price {
+  color: #0F1014;
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* 创建时间 */
+.gift-create-time {
+  color: #0F1014;
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+
+.gift-action-link {
+  color: #1C66E5;
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 400;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  transition: opacity 0.2s;
+}
+
+.gift-action-link:hover {
+  opacity: 0.8;
+}
+
+/* 弹窗内容 */
+.gift-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ==================== 新建/编辑礼物弹窗表单布局 ==================== */
+
+/* 弹窗内表单间距微调 - 覆盖 inline 布局默认样式 */
+.gift-modal .t-form-inline .t-form__item {
+  display: block;
+  margin: 0 0 20px 0;
+  min-width: unset;
+}
+
+.gift-modal .t-form-inline .t-form__item:last-child {
+  margin-bottom: 0;
+}
+
+/* TDesign Form 适配 - 输入框后缀字节计数 */
+.input-suffix-count {
+  color: rgba(0, 0, 0, 0.4);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.input-suffix-count.byte-overflow {
+  color: #e54545;
+}
+
+/* textarea 计数容器 */
+.textarea-count-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* TDesign Form 适配 - textarea 右下角字节计数 */
+.textarea-suffix-count {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  color: rgba(0, 0, 0, 0.4);
+  font-size: 12px;
+  line-height: 1;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.textarea-suffix-count.byte-overflow {
+  color: #e54545;
+}
+
+/* ==================== 礼物多语言配置弹窗样式 ==================== */
+
+.gift-lang-config-container {
+  padding: 0 24px 24px;
+}
+
+.gift-lang-config-info-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #F0F5FF;
+  border: 1px solid #D6E4FF;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #4F586B;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.5;
+}
+
+.gift-lang-config-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #EAEDF2;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.gift-lang-config-table thead th {
+  background: #F9FAFC;
+  color: #99A2B2;
+  font-weight: 500;
+  font-size: 13px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  padding: 10px 16px;
+  text-align: left;
+  border-bottom: 1px solid #EAEDF2;
+}
+
+.gift-lang-config-table tbody td {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #0F1014;
+  border-bottom: 1px solid #EAEDF2;
+}
+
+.gift-lang-config-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.gift-lang-config-table tbody tr:hover {
+  background: #F9FAFC;
+}
+
+.gift-lang-table-cell-name {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gift-lang-table-cell-desc {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gift-lang-table-empty {
+  color: #99A2B2;
+  font-style: italic;
+}
+
+.gift-lang-table-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.gift-lang-table-actions .t-link {
+  text-decoration: none;
+}
+
+.gift-lang-table-actions .t-link .t-link__content {
+  text-decoration: none;
+}
+
+.gift-lang-table-actions .t-link:hover .t-link__content {
+  text-decoration: none;
+}
+
+.gift-lang-table-action-link {
+  background: none;
+  border: none;
+  color: var(--td-brand-color, #0052D9);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.2s;
+}
+
+.gift-lang-table-action-link:hover {
+  opacity: 0.7;
+}
+
+.gift-lang-table-action-danger {
+  color: var(--td-error-color, #E34D59);
+}
+
+.gift-lang-table-action-link:disabled,
+.gift-lang-table-action-danger:disabled {
+  color: var(--td-text-color-disabled, #C5CDD7);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ==================== 语言编辑子弹窗 ==================== */
+
+.lang-edit-field {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.lang-edit-label {
+  flex-shrink: 0;
+  width: 100px;
+  padding-top: 10px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #4F586B;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  text-align: left;
+  line-height: 20px;
+}
+
+.lang-edit-input-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.lang-edit-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 60px 0 12px;
+  background: white;
+  border: 1px solid #E6E9F0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: rgba(0, 0, 0, 0.9);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.lang-edit-input:hover {
+  border-color: #1C66E5;
+}
+
+.lang-edit-input:focus {
+  border-color: #1C66E5;
+  box-shadow: 0 0 0 2px rgba(28, 102, 229, 0.1);
+}
+
+.lang-edit-input::placeholder {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+/* 输入框内的字数提示 - 靠右 */
+.lang-edit-input-wrapper .lang-edit-char-hint {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #99A2B2;
+  font-weight: 400;
+  pointer-events: none;
+  line-height: 1;
+}
+
+/* 文本域容器 */
+.lang-edit-textarea-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.lang-edit-textarea {
+  width: 100%;
+  padding: 10px 12px 28px 12px;
+  background: white;
+  border: 1px solid #E6E9F0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: rgba(0, 0, 0, 0.9);
+  outline: none;
+  resize: vertical;
+  min-height: 100px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+  line-height: 1.6;
+}
+
+.lang-edit-textarea:hover {
+  border-color: #1C66E5;
+}
+
+.lang-edit-textarea:focus {
+  border-color: #1C66E5;
+  box-shadow: 0 0 0 2px rgba(28, 102, 229, 0.1);
+}
+
+.lang-edit-textarea::placeholder {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+/* 文本域内的字数提示 - 右下角 */
+.lang-edit-textarea-wrapper .lang-edit-char-hint {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  font-size: 12px;
+  color: #99A2B2;
+  font-weight: 400;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.lang-edit-char-hint.byte-overflow {
+  color: #e54545;
+}
+
+/* ==================== 类别编辑弹窗 ==================== */
+
+.gift-category-edit-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.gift-category-edit-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  height: 32px;
+  background: #F0F5FF;
+  border: 1px solid #D6E4FF;
+  border-radius: 6px;
+  color: #1C66E5;
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.gift-category-edit-tag-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: none;
+  border: none;
+  color: #1C66E5;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.gift-category-edit-tag-close:hover {
+  background: rgba(28, 102, 229, 0.15);
+  color: #E54545;
+}
+
+.gift-category-edit-empty {
+  color: #8F959E;
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.gift-category-add-wrapper {
+  position: relative;
+}
+
+.gift-category-add-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  min-width: 160px;
+  background: white;
+  border: 1px solid #E6E9F0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 2000;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.gift-category-add-dropdown-item {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #0F1014;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.gift-category-add-dropdown-item:hover {
+  background: #F0F5FF;
+  color: #1C66E5;
+}
+
+.gift-category-add-dropdown-empty {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #99A2B2;
+  text-align: center;
+}
+
+/* 礼物配置页面搜索框样式 - 与直播间管理页面保持一致 */
+.gift-config-search-input {
+  width: 220px;
+}
+
+.gift-config-search-input .t-input {
+  border-radius: 16px !important;
+  background: white !important;
+  box-shadow: none !important;
+  height: 32px !important;
+}
+
+.gift-config-search-input .t-input__inner {
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+.gift-config-search-input .t-input__inner::placeholder {
+  color: rgba(0, 0, 0, 0.4);
+}

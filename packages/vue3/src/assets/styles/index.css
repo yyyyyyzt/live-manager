@@ -1,0 +1,12 @@
+/* 全局基础样式（无 Tailwind）。组件优先使用 Naive UI。 */
+
+:root {
+  --app-bg: #f5f7fa;
+  --app-text: #1d2129;
+}
+
+body {
+  margin: 0;
+  color: var(--app-text);
+  background: var(--app-bg);
+}

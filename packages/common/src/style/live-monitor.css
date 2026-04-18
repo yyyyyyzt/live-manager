@@ -1,0 +1,491 @@
+/* 直播监控页面 */
+.live-monitor-page {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* 页面头部 */
+.monitor-header {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-shrink: 0;
+  min-height: 32px;
+}
+
+.monitor-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.monitor-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.monitor-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-color-primary);
+  margin: 0;
+}
+
+.monitor-subtitle {
+  font-size: 14px;
+  color: var(--text-color-tertiary);
+  margin: 0;
+}
+
+/* 直播网格 - 卡片自然撑开高度，超出时滚动 */
+.live-monitor-grid {
+  container-type: inline-size;
+  container-name: live-grid;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  /* min-content 保证行高不被压扁，max-content 让行高跟随卡片实际高度 */
+  grid-auto-rows: minmax(min-content, max-content);
+  gap: 8px;
+  /* 不参与 flex 均分，改用 overflow 滚动 */
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #FFFFFF;
+  padding: 8px;
+  border-radius: 8px;
+  justify-items: center;
+}
+
+/* 加载状态 */
+.monitor-loading {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-color-tertiary);
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--stroke-color-primary);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 空状态 */
+.monitor-empty {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--text-color-tertiary);
+}
+
+.empty-icon {
+  color: var(--text-color-placeholder);
+}
+
+/* 直播卡片 - 宽度填满格子，高度由内容撑开 */
+.live-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: transparent;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: none;
+  border: 1px solid transparent;
+  transition: none;
+  cursor: pointer;
+  position: relative;
+  padding: 4px;
+}
+
+.live-card.hovered {
+  background: #F5F5F5;
+  box-shadow: none;
+  transform: none;
+  border: 1px solid #E0E0E0;
+}
+
+/* 视频容器 - 宽度填满卡片，高度由 4:3 比例撑开 */
+.live-video-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  /* 防止在 flex column 中被压缩 */
+  flex-shrink: 0;
+  background: #000;
+  overflow: hidden;
+  border-radius: 16px;
+}
+
+.live-video-bg {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  filter: blur(8px);
+  opacity: 0.6;
+}
+
+.live-video-player {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* 房间ID标签 */
+.live-id-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 2px 8px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 3px;
+  font-size: 11px;
+  color: #fff;
+  z-index: 2;
+  max-width: calc(100% - 12px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 在线人数 */
+.live-viewer-count {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 3px;
+  font-size: 10px;
+  color: #fff;
+  z-index: 2;
+  font-family: PingFang SC;
+}
+
+.anchor-avatar {
+  width: 24px;
+  height: 24px;
+  background: #f0f0f0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  color: #666;
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+}
+
+.viewer-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #00B578;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* 视频遮罩 */
+.live-video-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  z-index: 3;
+  cursor: pointer;
+  border-radius: inherit;
+}
+
+.live-card:hover .live-video-overlay {
+  opacity: 1;
+}
+
+.overlay-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #fff;
+  pointer-events: none;
+  letter-spacing: 0.5px;
+}
+
+.overlay-btn.primary {
+  background: none;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+}
+
+/* 全屏控制按钮 */
+.fullscreen-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s;
+}
+
+.fullscreen-close:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.fullscreen-mute {
+  position: absolute;
+  top: 12px;
+  right: 48px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s;
+}
+
+.fullscreen-mute:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* 卡片信息 - 固定高度 */
+.live-card-info {
+  padding: 4px 8px;
+  border-bottom: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.live-card-title {
+  font-size: max(11px, min(2.2cqw, 15px));
+  font-weight: 500;
+  color: var(--text-color-primary);
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.live-card-anchor {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.anchor-name {
+  font-size: max(11px, min(2cqw, 14px));
+  color: var(--text-color-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.meta-viewer-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: max(10px, min(1.8cqw, 13px));
+  color: var(--text-color-tertiary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 卡片操作区 */
+.live-card-actions {
+  display: flex;
+  height: 32px;
+  align-items: stretch;
+  border-top: none;
+  background: transparent;
+  overflow: hidden;
+  transition: opacity 0.2s;
+}
+
+.live-card-actions .action-btn {
+  flex: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, background 0.2s;
+}
+
+.live-card-actions.show .action-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+.action-btn.warn {
+  color: #FA6400;
+  border-right: 1px solid #E6E9F0;
+}
+
+.action-btn.warn:hover {
+  background: #FFF7F2;
+}
+
+.action-btn.close {
+  color: #E34D59;
+}
+
+.action-btn.close:hover {
+  background: transparent;
+}
+
+/* 图标包装 - 关闭按钮中的图标容器 */
+.action-icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.square-icon {
+  position: absolute;
+}
+
+/* 分页 */
+.live-monitor-pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--stroke-color-primary);
+  flex-shrink: 0;
+  min-height: 48px;
+  margin-top: 8px;
+}
+
+/* 搜索框样式 - 与直播间管理页面保持一致 */
+.monitor-search-input {
+  width: 220px;
+}
+
+.monitor-search-input .t-input {
+  border-radius: 16px !important;
+  background: white !important;
+  box-shadow: none !important;
+  height: 32px !important;
+}
+
+.monitor-search-input .t-input__inner {
+  font-size: 14px;
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+.monitor-search-input .t-input__inner::placeholder {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+
+
+/* 响应式：窗口较小时减少列数 */
+@media (max-width: 1400px) {
+  .live-monitor-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1100px) {
+  .live-monitor-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .live-monitor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 1024px) {
+  .live-card {
+     max-width: 380px;
+  }
+}
