@@ -484,6 +484,86 @@ apiRouter.post('/get_live_list', createTuikitProxyHandler('get_live_list'));
 apiRouter.post('/destroy_room', createTuikitProxyHandler('destroy_room'));
 apiRouter.post('/get_room_info', createTuikitProxyHandler('get_room_info'));
 
+// ========== 主播入口 Token（短期凭证交换） ==========
+// 管理端建场后调用 /api/host_entry/issue 生成短期 token，拼成可复制的主播链接。
+// 主播页面通过 /api/host_entry/consume 换取 sdkAppId + userId + userSig，无需重新登录。
+
+const { createToken: createHostEntryToken, verifyToken: verifyHostEntryToken, DEFAULT_TTL_SECONDS: HOST_ENTRY_TTL } = require('../services/hostEntryToken.js');
+
+apiRouter.post('/host_entry/issue', (req, res) => {
+  const { roomId, userId, ttlSeconds } = req.body || {};
+  if (!roomId) {
+    res.json({ code: -1, message: 'roomId is required' });
+    return;
+  }
+  const creds = getCredentials(req);
+  const ownerId = String(userId || creds?.identifier || Config.Identifier || '');
+  if (!ownerId) {
+    res.json({ code: -1, message: 'userId is required' });
+    return;
+  }
+  const token = createHostEntryToken({ roomId: String(roomId), userId: ownerId, ttlSeconds });
+  if (!token) {
+    res.json({ code: -1, message: 'failed to issue token' });
+    return;
+  }
+  logger.info('HOST_ENTRY_ISSUE', '✅ 已生成主播入口 token', {
+    roomId,
+    userId: ownerId,
+    ttlSeconds: Number(ttlSeconds) || HOST_ENTRY_TTL,
+  });
+  res.json({
+    code: 0,
+    message: 'success',
+    data: {
+      token,
+      roomId: String(roomId),
+      userId: ownerId,
+      expiresIn: Number(ttlSeconds) || HOST_ENTRY_TTL,
+    },
+  });
+});
+
+apiRouter.post('/host_entry/consume', (req, res) => {
+  const { token } = req.body || {};
+  const result = verifyHostEntryToken(token);
+  if (!result.ok) {
+    logger.warn('HOST_ENTRY_CONSUME', `❌ token 校验失败: ${result.error}`);
+    // 使用 400（Bad Request）而非 401，避免 axios 响应拦截器把用户踢到登录页：
+    // 主播入口 token 不属于管理员会话凭证，它是独立的一次性进房票据。
+    res.status(400).json({ code: -1, message: `invalid token (${result.error})` });
+    return;
+  }
+
+  // 服务端必须配置了 SecretKey 才能签发 userSig
+  if (!isServerConfigured()) {
+    logger.warn('HOST_ENTRY_CONSUME', '❌ 服务端未配置 SecretKey');
+    res.status(500).json({ code: -1, message: 'server not configured' });
+    return;
+  }
+
+  const sigInfo = getUserSig(result.userId);
+  if (!sigInfo || !sigInfo.UserSig) {
+    logger.error('HOST_ENTRY_CONSUME', '签发 UserSig 失败', { userId: result.userId });
+    res.status(500).json({ code: -1, message: 'failed to sign userSig' });
+    return;
+  }
+  logger.info('HOST_ENTRY_CONSUME', '✅ token 交换成功', {
+    roomId: result.roomId,
+    userId: result.userId,
+  });
+  res.json({
+    code: 0,
+    message: 'success',
+    data: {
+      sdkAppId: sigInfo.SdkAppId,
+      userId: result.userId,
+      userSig: sigInfo.UserSig,
+      roomId: result.roomId,
+    },
+  });
+});
+
 // ========== 健康检查 ==========
 
 apiRouter.get('/test', (_, res) => {

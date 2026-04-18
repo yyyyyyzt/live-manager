@@ -82,6 +82,10 @@
                     <LogIn class="action-icon-only" :size="16" />
                     <span class="action-text">进入房间</span>
                   </span>
+                  <span class="action-link" title="复制主播链接" @click="handleCopyHostLink(room)">
+                    <LinkIcon class="action-icon-only" :size="16" />
+                    <span class="action-text">主播链接</span>
+                  </span>
                   <span class="action-link" title="房间详情" @click="handleShowDetail(room)">
                     <Info class="action-icon-only" :size="16" />
                     <span class="action-text">房间详情</span>
@@ -258,7 +262,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { Plus, Copy, LogIn, Pencil, Trash2, RefreshCw, Info, Search } from 'lucide-vue-next';
+import { Plus, Copy, LogIn, Pencil, Trash2, RefreshCw, Info, Search, Link2 as LinkIcon } from 'lucide-vue-next';
 import { message } from '@/utils/message';
 import '@live-manager/common/style/room-list.css';
 import { getByteLength, ROOM_SEARCH_MAX_BYTES } from '@live-manager/common';
@@ -276,6 +280,7 @@ import { copyText } from '@/utils';
 import { defaultCoverUrl } from '@live-manager/common';
 import CreateRoomModal from '@/components/CreateRoomModal.vue';
 import EditRoomModal from '@/components/EditRoomModal.vue';
+import { issueHostEntryToken, buildHostEntryUrl } from '@/api/host-entry';
 
 type Room = RoomListItem;
 
@@ -399,6 +404,27 @@ const handleEnterRoom = (roomId: string) => {
 const handleCopyRoomId = (roomId: string) => {
   copyText(roomId);
   message.success('直播间ID已复制');
+};
+
+// 复制主播入口链接（含短期 token）
+const handleCopyHostLink = async (room: Room) => {
+  try {
+    const res = await issueHostEntryToken({
+      roomId: room.RoomId,
+      userId: room.Owner_Account || undefined,
+    });
+    if (res.code !== 0 || !res.data?.token) {
+      message.error(res.message || '生成主播链接失败');
+      return;
+    }
+    const url = buildHostEntryUrl(res.data.token);
+    await copyText(url);
+    const ttlMin = Math.max(1, Math.round((res.data.expiresIn || 0) / 60));
+    message.success(`主播链接已复制（${ttlMin} 分钟内有效）`);
+  } catch (error: any) {
+    console.error('生成主播链接失败:', error);
+    message.error(error?.message || '生成主播链接失败');
+  }
 };
 
 // 编辑房间
