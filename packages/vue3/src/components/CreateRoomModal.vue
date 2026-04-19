@@ -1,15 +1,24 @@
 <template>
   <n-modal
     v-model:show="dialogVisible"
-    :header="showSuccess ? '创建成功' : '新建直播间'"
-    :width="560"
-    placement="center"
+    preset="card"
+    :mask-closable="false"
+    :bordered="false"
+    :title="showSuccess ? '创建成功' : '新建直播间'"
+    :style="{ width: '560px', maxWidth: 'calc(100vw - 32px)' }"
     class="create-room-modal"
     @close="handleClose"
   >
-    <n-form v-if="!showSuccess" class="create-room-form" :label-width="100" :colon="false">
+    <n-form
+      v-if="!showSuccess"
+      class="create-room-form"
+      label-placement="left"
+      label-align="right"
+      :label-width="100"
+      require-mark-placement="left"
+    >
       <!-- 直播间主播 -->
-      <n-form-item label="直播间主播" :required-mark="true">
+      <n-form-item label="直播间主播" required>
         <n-input
           v-model:value="formData.anchorId"
           placeholder="请输入主播ID"
@@ -66,74 +75,85 @@
       </n-form-item>
 
       <!-- 布局模板 -->
-      <n-form-item label="布局模板" :required-mark="true" :help="currentTemplateDesc">
-        <n-select
-          v-model:value="formData.seatTemplate"
-          :options="seatTemplateSelectOptions"
-          style="width: 100%"
-        />
+      <n-form-item label="布局模板" required>
+        <div class="form-item-with-hint">
+          <n-select
+            v-model:value="formData.seatTemplate"
+            :options="seatTemplateSelectOptions"
+            style="width: 100%"
+          />
+          <div v-if="currentTemplateDesc" class="form-item-hint">{{ currentTemplateDesc }}</div>
+        </div>
       </n-form-item>
 
       <!-- 最大麦位数 - 仅语聊房模板显示 -->
-      <n-form-item v-if="formData.seatTemplate === 'AudioSalon' || formData.seatTemplate === 'Karaoke'" label="最大麦位数" help="语聊房模板可自定义麦位数量，受套餐包限制">
-        <n-input-number
-          :value="formData.maxSeatCount"
-          @update:value="handleMaxSeatCountChange"
-          :min="1"
-          :max="16"
-          :status="formData.maxSeatCount < 1 || formData.maxSeatCount > 16 ? 'error' : undefined"
-          placeholder="请输入最大麦位数"
-          style="width: 100%"
-        />
+      <n-form-item v-if="formData.seatTemplate === 'AudioSalon' || formData.seatTemplate === 'Karaoke'" label="最大麦位数">
+        <div class="form-item-with-hint">
+          <n-input-number
+            :value="formData.maxSeatCount"
+            @update:value="handleMaxSeatCountChange"
+            :min="1"
+            :max="16"
+            :status="formData.maxSeatCount < 1 || formData.maxSeatCount > 16 ? 'error' : undefined"
+            placeholder="请输入最大麦位数"
+            style="width: 100%"
+          />
+          <div class="form-item-hint">语聊房模板可自定义麦位数量，受套餐包限制</div>
+        </div>
       </n-form-item>
 
       <!-- OBS 推流选项 -->
-      <n-form-item label="推流方式" help="勾选后创建成功将显示 OBS 推流信息">
-        <n-checkbox v-model:checked="useObsStreaming">
-          使用 OBS 推流
-        </n-checkbox>
+      <n-form-item label="推流方式">
+        <div class="form-item-with-hint">
+          <n-checkbox v-model:checked="useObsStreaming">
+            使用 OBS 推流
+          </n-checkbox>
+          <div class="form-item-hint">勾选后创建成功将显示 OBS 推流信息</div>
+        </div>
       </n-form-item>
 
       <!-- 自定义信息 - 折叠/展开区域 -->
-      <div class="custom-info-section">
-        <div class="custom-info-toggle" @click="customInfoExpanded = !customInfoExpanded">
-          <ChevronDown v-if="customInfoExpanded" :size="16" />
-          <ChevronRight v-else :size="16" />
-          <span>自定义信息</span>
-          <span v-if="customInfos.length > 0" class="custom-info-count">{{ customInfos.length }}</span>
-        </div>
-        <div v-if="customInfoExpanded" class="custom-info-container">
-          <div v-for="(info, index) in customInfos" :key="index" class="custom-info-row">
-            <div class="custom-input-wrap">
-              <n-input
-                v-model:value="info.key"
-                placeholder="请输入Key"
-                :status="getKeyBytes(info.key) > CUSTOM_INFO_LIMITS.maxKeyBytes || isCustomInfoKeyMissing(info) ? 'error' : undefined"
-              />
+      <n-form-item label=" " :show-feedback="false" class="custom-info-form-item">
+        <div class="custom-info-section">
+          <div class="custom-info-toggle" @click="customInfoExpanded = !customInfoExpanded">
+            <ChevronDown v-if="customInfoExpanded" :size="16" />
+            <ChevronRight v-else :size="16" />
+            <span>自定义信息</span>
+            <span v-if="customInfos.length > 0" class="custom-info-count">{{ customInfos.length }}</span>
+          </div>
+          <div v-if="customInfoExpanded" class="custom-info-container">
+            <div v-for="(info, index) in customInfos" :key="index" class="custom-info-row">
+              <div class="custom-input-wrap">
+                <n-input
+                  v-model:value="info.key"
+                  placeholder="请输入 Key"
+                  :status="getKeyBytes(info.key) > CUSTOM_INFO_LIMITS.maxKeyBytes || isCustomInfoKeyMissing(info) ? 'error' : undefined"
+                />
+              </div>
+              <div class="custom-input-wrap custom-value-wrap">
+                <n-input
+                  v-model:value="info.value"
+                  placeholder="请输入 Value"
+                  :status="getValueBytes(info.value) > CUSTOM_INFO_LIMITS.maxValueBytes ? 'error' : undefined"
+                />
+              </div>
+              <n-button quaternary circle size="small" @click="removeCustomInfo(index)">
+                <template #icon><X /></template>
+              </n-button>
             </div>
-            <div class="custom-input-wrap custom-value-wrap">
-              <n-input
-                v-model:value="info.value"
-                placeholder="请输入Value"
-                :status="getValueBytes(info.value) > CUSTOM_INFO_LIMITS.maxValueBytes ? 'error' : undefined"
-              />
-            </div>
-            <n-button quaternary circle @click="removeCustomInfo(index)">
-              <X />
+            <n-button
+              v-if="customInfos.length < CUSTOM_INFO_LIMITS.maxCount"
+              dashed
+              size="small"
+              block
+              @click="addCustomInfo"
+            >
+              <template #icon><Plus :size="14" /></template>
+              添加
             </n-button>
           </div>
-          <n-button style="width:80px;"
-            v-if="customInfos.length < CUSTOM_INFO_LIMITS.maxCount"
-            quaternary
-            round
-            @click="addCustomInfo"
-            type="primary"
-          >
-            <template #icon><Plus /></template>
-            添加
-          </n-button>
         </div>
-      </div>
+      </n-form-item>
     </n-form>
 
     <!-- 创建成功提示 -->
@@ -176,12 +196,17 @@
       </div>
     </div>
 
-    <!-- Footer -->
     <template #footer>
       <div class="dialog-footer">
         <template v-if="!showSuccess">
           <n-button ghost round @click="handleClose">取消</n-button>
-          <n-button type="primary" round :loading="creating" :disabled="creating || !formData.anchorId.trim() || coverUploadRef?.isValidating || coverUploadRef?.hasUrlError" @click="handleSubmit">
+          <n-button
+            type="primary"
+            round
+            :loading="creating"
+            :disabled="creating || !formData.anchorId.trim() || coverUploadRef?.isValidating || coverUploadRef?.hasUrlError"
+            @click="handleSubmit"
+          >
             {{ creating ? '创建中...' : '创建' }}
           </n-button>
         </template>
@@ -547,13 +572,29 @@ const handleComplete = () => {
 </script>
 
 <style scoped>
-/* TDesign Form 适配 */
+/* Modal 主体：限制最大高度、内容区可滚动，避免 OBS 展开后溢出视口 */
+.create-room-modal :deep(.n-card__content) {
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  padding-top: 16px;
+}
+
+.create-room-modal :deep(.n-card-header) {
+  padding-bottom: 8px;
+}
+
+/* FormItem 间距 */
 .create-room-modal :deep(.n-form-item) {
   margin-bottom: 16px;
 }
 
 .create-room-modal :deep(.n-form-item:last-child) {
   margin-bottom: 0;
+}
+
+/* ImageUpload 在 FormItem 内自适应宽度 */
+.create-room-modal :deep(.n-form-item .image-upload-container) {
+  width: 100%;
 }
 
 /* 输入框内的字节计数后缀 */
@@ -567,16 +608,18 @@ const handleComplete = () => {
   color: #E34D59;
 }
 
-/* ImageUpload 在 FormItem 内自适应宽度 */
-.create-room-modal :deep(.n-form-item .image-upload-container) {
+/* 表单项下方的辅助说明（替换 Naive 未提供的 `help` 属性） */
+.form-item-with-hint {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.field-hint {
-  margin-left: 8px;
+.form-item-hint {
   font-size: 12px;
-  color: #888;
-  font-weight: normal;
+  line-height: 1.4;
+  color: #86909C;
 }
 
 /* 自定义信息折叠/展开区域 */
