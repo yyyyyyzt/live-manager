@@ -40,6 +40,14 @@ export async function consumeHostEntryToken(token: string): Promise<HostEntryCon
   return post<HostEntryConsumeResponse>('/host_entry/consume', { token });
 }
 
+/** 主播用入口 token 解散当前直播间（服务端以房主身份调 destroy_room，避免 SDK endLive 100006） */
+export async function destroyHostRoomByEntryToken(params: {
+  token: string;
+  roomId: string;
+}): Promise<{ code: number; message: string; data?: { ErrorCode?: number; ErrorInfo?: string } }> {
+  return post('/host_entry/destroy_room', { token: params.token, roomId: params.roomId });
+}
+
 export function buildHostEntryUrl(token: string): string {
   const base = window.location.origin + window.location.pathname;
   return `${base}#/host?token=${encodeURIComponent(token)}`;
