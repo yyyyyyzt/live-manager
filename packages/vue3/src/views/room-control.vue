@@ -14,7 +14,16 @@
         </n-button>
         <h1>直播间详情</h1>
       </div>
-      <div class="nav-right">
+      <div class="nav-right nav-right-actions">
+        <div class="nav-comments-toggle" title="关闭后观众无法发送评论，对应房间 IsMessageDisabled；并广播自定义消息供观众端即时隐藏评论区">
+          <span class="nav-comments-label">允许评论</span>
+          <n-switch
+            :value="commentsEnabled"
+            :loading="commentsToggleLoading"
+            :disabled="!roomInfo || liveEndedOverlayVisible"
+            @update:value="handleToggleComments"
+          />
+        </div>
         <n-button quaternary type="error" @click="handleBanRoom">
           <template #icon><CircleStop /></template>
           强制关播
@@ -353,6 +362,13 @@
           <UserRoundX v-else />
           {{ isUserBanned(audienceDropdown?.userId || '') ? '解除封禁' : '封禁' }}
         </button>
+        <button
+          v-if="audienceDropdown && canKickAudienceUser(audienceDropdown.userId)"
+          class="dropdown-item danger"
+          @click="handleDropdownKickOut"
+        >
+          移出房间
+        </button>
       </div>
     </Teleport>
   </div>
@@ -399,6 +415,8 @@ import {
   unbanMember,
   getBannedMemberList,
   getMutedMemberList,
+  kickUsersOutRoom,
+  setRoomCommentsEnabled,
 } from '@/api/room';
 import {
   batchGetUserProfilePortrait,
@@ -436,6 +454,9 @@ const sdkReady = ref(false);
 let hasInitialized = false;
 const loading = ref(true);
 const roomInfo = ref<RoomInfo | null>(null);
+/** 与房间 IsMessageDisabled 相反：true 表示允许观众发评论 */
+const commentsEnabled = ref(true);
+const commentsToggleLoading = ref(false);
 const liveEndedOverlayVisible = ref(false);
 const activeTab = ref<'chat' | 'audience'>('chat');
 const liveDuration = ref(0);
@@ -570,6 +591,40 @@ const handleLeaveLive = async () => {
   } catch (error) {
     console.error('Failed to leave live:', error);
   }
+};
+
+const handleToggleComments = async (enabled: boolean) => {
+  if (!roomId.value || !roomInfo.value || liveEndedOverlayVisible.value) return;
+  commentsToggleLoading.value = true;
+  try {
+    const { updateResult, signalResult } = await setRoomCommentsEnabled(roomId.value, enabled);
+    const mainCode = updateResult?.ErrorCode ?? (updateResult as { Error?: number })?.Error ?? -1;
+    if (mainCode !== 0) {
+      const info = updateResult?.ErrorInfo || '更新房间失败';
+      showMessage('error', getErrorMessage(mainCode, info));
+      return;
+    }
+    roomInfo.value.isMessageDisabled = !enabled;
+    commentsEnabled.value = enabled;
+    const sigCode = signalResult?.ErrorCode ?? (signalResult as { Error?: number })?.Error ?? 0;
+    if (sigCode !== 0 && signalResult) {
+      message.warning('房间已更新，但通知观众端的自定义消息发送失败，观众可依赖进房拉取房间信息刷新');
+    } else {
+      message.success(enabled ? '已开放评论' : '已关闭评论');
+    }
+  } catch (error: any) {
+    const { code, info } = getErrorInfo(error);
+    const msg = code ? getErrorMessage(code, info) : (error.message || '未知错误');
+    showMessage('error', `操作失败: ${msg}`);
+  } finally {
+    commentsToggleLoading.value = false;
+  }
+};
+
+const canKickAudienceUser = (userId: string) => {
+  if (!userId || userId === anchorUserId.value) return false;
+  if (userId === `${anchorUserId.value}_obs`) return false;
+  return true;
 };
 
 const handleBanRoom = () => {
@@ -842,6 +897,38 @@ const handleDropdownBan = () => {
   closeAudienceDropdown();
 };
 
+const handleDropdownKickOut = () => {
+  if (!audienceDropdown.value || !roomId.value) return;
+  const { userId, userName } = audienceDropdown.value;
+  if (!canKickAudienceUser(userId)) {
+    closeAudienceDropdown();
+    return;
+  }
+  confirmDialogTitle.value = '移出房间';
+  confirmDialogContent.value = `将「${userName || userId}」移出当前直播间？该用户需重新进入才能观看。`;
+  confirmAction.value = async () => {
+    try {
+      const res = await kickUsersOutRoom(roomId.value, [userId], '管理员移出房间');
+      const code = res?.ErrorCode ?? (res as { Error?: number })?.Error ?? -1;
+      if (code !== 0) {
+        const info = res?.ErrorInfo || '';
+        showMessage('error', getErrorMessage(code, info));
+      } else {
+        message.success('已移出房间');
+        showMessage('success', `已移出「${userName || userId}」`);
+      }
+    } catch (error: any) {
+      const { code, info } = getErrorInfo(error);
+      const msg = code ? getErrorMessage(code, info) : (error.message || '未知错误');
+      showMessage('error', `移出失败: ${msg}`);
+    } finally {
+      confirmDialogVisible.value = false;
+    }
+  };
+  confirmDialogVisible.value = true;
+  closeAudienceDropdown();
+};
+
 // 点击外部关闭下拉菜单
 const handleClickOutsideDropdown = (e: MouseEvent) => {
   if (dropdownRef.value && !dropdownRef.value.contains(e.target as Node)) {
@@ -906,6 +993,8 @@ const fetchRoomInfo = async () => {
         notice: item.Notice || '',
         isLikeEnabled: item.IsThumbsEnabled !== undefined ? item.IsThumbsEnabled : true,
       };
+
+      commentsEnabled.value = item.IsMessageDisabled !== true;
 
       const roomCreateTime = item.CreateTime ? item.CreateTime * 1000 : null;
       createTime.value = roomCreateTime;
@@ -1267,6 +1356,25 @@ onUnmounted(() => {
 .nav-right {
   display: flex;
   gap: 20px;
+}
+
+.nav-right-actions {
+  align-items: center;
+}
+
+.nav-comments-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  background: #f5f7fa;
+}
+
+.nav-comments-label {
+  font-size: 13px;
+  color: #4e5969;
+  white-space: nowrap;
 }
 
 .action-btn {

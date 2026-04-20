@@ -29,6 +29,9 @@ export {
   pickUserOnSeat,
   addRobot,
   importAccount,
+  kickUsersOutRoom,
+  setRoomCommentsEnabled,
+  LIVE_MANAGER_CUSTOM_BUSINESS_ID,
 } from '@live-manager/common';
 export type {
   VideoQuality,
@@ -41,4 +44,5 @@ export type {
   GetSeatListResponse,
   CreateRoomResponse,
   RoomStatisticResponse,
+  LiveManagerCustomPayload,
 } from '@live-manager/common';
