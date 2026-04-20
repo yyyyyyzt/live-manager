@@ -677,6 +677,70 @@ apiRouter.post('/host_entry/destroy_room', asyncHandler(async (req, res) => {
   });
 }, 'host_entry_destroy_room', 'local'));
 
+// ========== 评论先审后发（代理至 audit-server）==========
+// 管理端统一走 /api/moderation/*，由 server 注入 X-Admin-Token，前端无需持有审核密钥。
+// 环境变量：AUDIT_SERVER_URL（默认 http://127.0.0.1:3080）、AUDIT_ADMIN_TOKEN（默认与 audit-server 一致 dev-admin-token）
+
+const AUDIT_SERVER_BASE = (process.env.AUDIT_SERVER_URL || 'http://127.0.0.1:3080').replace(/\/$/, '');
+const AUDIT_ADMIN_TOKEN = process.env.AUDIT_ADMIN_TOKEN || 'dev-admin-token';
+
+const auditHeaders = () => ({ 'X-Admin-Token': AUDIT_ADMIN_TOKEN });
+
+apiRouter.get('/moderation/comments/pending', asyncHandler(async (req, res) => {
+  const roomId = String(req.query.roomId || '');
+  if (!roomId) {
+    res.status(400).json({ code: -1, message: 'roomId required' });
+    return;
+  }
+  try {
+    const url = `${AUDIT_SERVER_BASE}/api/moderation/comments/pending`;
+    const r = await axios.get(url, {
+      params: { roomId },
+      headers: auditHeaders(),
+      timeout: 12000,
+      validateStatus: () => true,
+    });
+    res.status(r.status >= 400 ? 502 : 200).json(r.data);
+  } catch (e) {
+    logger.error('MODERATION_PENDING', e?.message || e);
+    res.status(502).json({ code: -1, message: '无法连接评论审核服务，请检查 AUDIT_SERVER_URL 与 audit-server 是否已启动' });
+  }
+}, 'moderation_pending'));
+
+apiRouter.post('/moderation/comments/:commentId/approve', asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+  const roomId = String(req.body?.roomId || '');
+  if (!roomId) {
+    res.status(400).json({ code: -1, message: 'roomId required' });
+    return;
+  }
+  try {
+    const url = `${AUDIT_SERVER_BASE}/api/moderation/comments/${encodeURIComponent(commentId)}/approve`;
+    const r = await axios.post(url, { roomId }, { headers: { ...auditHeaders(), 'Content-Type': 'application/json' }, timeout: 15000, validateStatus: () => true });
+    res.status(r.status).json(r.data);
+  } catch (e) {
+    logger.error('MODERATION_APPROVE', e?.message || e);
+    res.status(502).json({ code: -1, message: '审核服务请求失败' });
+  }
+}, 'moderation_approve'));
+
+apiRouter.post('/moderation/comments/:commentId/reject', asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+  const roomId = String(req.body?.roomId || '');
+  if (!roomId) {
+    res.status(400).json({ code: -1, message: 'roomId required' });
+    return;
+  }
+  try {
+    const url = `${AUDIT_SERVER_BASE}/api/moderation/comments/${encodeURIComponent(commentId)}/reject`;
+    const r = await axios.post(url, { roomId }, { headers: { ...auditHeaders(), 'Content-Type': 'application/json' }, timeout: 15000, validateStatus: () => true });
+    res.status(r.status).json(r.data);
+  } catch (e) {
+    logger.error('MODERATION_REJECT', e?.message || e);
+    res.status(502).json({ code: -1, message: '审核服务请求失败' });
+  }
+}, 'moderation_reject'));
+
 // ========== 健康检查 ==========
 
 apiRouter.get('/test', (_, res) => {

@@ -81,6 +81,14 @@
           <n-tabs v-model:value="activeTab" class="interaction-tabs" type="line">
             <n-tab-pane name="chat" tab="消息列表" />
             <n-tab-pane name="audience" tab="观众列表" />
+            <n-tab-pane name="moderation">
+              <template #tab>
+                <span class="mod-tab-label">
+                  待审评论
+                  <span v-if="pendingModerationCount > 0" class="mod-tab-badge">{{ pendingModerationCount }}</span>
+                </span>
+              </template>
+            </n-tab-pane>
           </n-tabs>
 
           <div class="interaction-body">
@@ -92,6 +100,52 @@
                 :on-mute-user="handleMuteAudience"
                 :on-ban-user="handleBanAudience"
               />
+            </div>
+
+            <div v-show="activeTab === 'moderation'" class="moderation-tab">
+              <div class="moderation-toolbar">
+                <n-button size="small" quaternary :loading="moderationLoading" @click="fetchPendingModeration">
+                  刷新
+                </n-button>
+                <span v-if="moderationError" class="moderation-error">{{ moderationError }}</span>
+              </div>
+              <div v-if="moderationLoading && moderationList.length === 0" class="moderation-empty">加载中…</div>
+              <div v-else-if="moderationList.length === 0" class="moderation-empty">
+                暂无待审评论。观众联调上报后按房间 ID 显示在此；请确保已启动 audit-server，且管理端配置了 AUDIT_SERVER_URL（默认 http://127.0.0.1:3080）。
+              </div>
+              <ul v-else class="moderation-list">
+                <li v-for="row in moderationList" :key="row.id" class="moderation-item">
+                  <div class="moderation-item-head">
+                    <span class="moderation-author">{{ row.author || row.senderId }}</span>
+                    <span class="moderation-time">{{ formatModerationTime(row.createdAt) }}</span>
+                  </div>
+                  <p class="moderation-text">{{ row.text }}</p>
+                  <div class="moderation-item-meta">
+                    <span class="moderation-id" :title="row.id">ID {{ row.id.slice(0, 18) }}…</span>
+                  </div>
+                  <div class="moderation-actions">
+                    <n-button
+                      size="tiny"
+                      type="primary"
+                      :disabled="!!moderationActionId && moderationActionId !== row.id"
+                      :loading="moderationActionId === row.id"
+                      @click="handleApproveModeration(row.id)"
+                    >
+                      通过
+                    </n-button>
+                    <n-button
+                      size="tiny"
+                      quaternary
+                      type="error"
+                      :disabled="!!moderationActionId && moderationActionId !== `r_${row.id}`"
+                      :loading="moderationActionId === `r_${row.id}`"
+                      @click="handleRejectModeration(row.id)"
+                    >
+                      拒绝
+                    </n-button>
+                  </div>
+                </li>
+              </ul>
             </div>
 
             <!-- 观众列表 -->
@@ -419,6 +473,12 @@ import {
   setRoomCommentsEnabled,
 } from '@/api/room';
 import {
+  getPendingComments,
+  approveComment,
+  rejectComment,
+  type ModerationCommentItem,
+} from '@/api/moderation';
+import {
   batchGetUserProfilePortrait,
   getCurrentUserId,
   isUrlOverrideMode,
@@ -458,7 +518,7 @@ const roomInfo = ref<RoomInfo | null>(null);
 const commentsEnabled = ref(true);
 const commentsToggleLoading = ref(false);
 const liveEndedOverlayVisible = ref(false);
-const activeTab = ref<'chat' | 'audience'>('chat');
+const activeTab = ref<'chat' | 'audience' | 'moderation'>('chat');
 const liveDuration = ref(0);
 const createTime = ref<number | null>(null);
 const successMsg = ref('');
@@ -496,6 +556,99 @@ const refreshOptions = [
   { label: '5分钟', value: 300 },
 ];
 const refreshInterval = ref(30);
+
+// 先审后发（评论审核，由监控员在控制台处理，非主播职责）
+const moderationList = ref<ModerationCommentItem[]>([]);
+const moderationLoading = ref(false);
+const moderationError = ref('');
+/** 正在处理的评论 id，或 `r_${id}` 表示拒绝中 */
+const moderationActionId = ref<string | null>(null);
+const pendingModerationCount = computed(() => moderationList.value.length);
+
+let moderationPollTimer: ReturnType<typeof setInterval> | null = null;
+
+const formatModerationTime = (ms: number) => {
+  if (!ms) return '-';
+  return new Date(ms).toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+};
+
+const fetchPendingModeration = async () => {
+  if (!roomId.value) return;
+  moderationLoading.value = true;
+  moderationError.value = '';
+  try {
+    const res = await getPendingComments(roomId.value);
+    if (res.code !== 0) {
+      moderationError.value = res.message || '拉取待审列表失败';
+      moderationList.value = [];
+      return;
+    }
+    moderationList.value = res.data?.list || [];
+  } catch (e: unknown) {
+    moderationError.value = e instanceof Error ? e.message : '网络错误';
+    moderationList.value = [];
+  } finally {
+    moderationLoading.value = false;
+  }
+};
+
+const stopModerationPoll = () => {
+  if (moderationPollTimer) {
+    clearInterval(moderationPollTimer);
+    moderationPollTimer = null;
+  }
+};
+
+const startModerationPoll = () => {
+  stopModerationPoll();
+  moderationPollTimer = window.setInterval(() => {
+    if (activeTab.value === 'moderation' && roomId.value && !moderationActionId.value) {
+      fetchPendingModeration();
+    }
+  }, 15000);
+};
+
+const handleApproveModeration = async (commentId: string) => {
+  if (!roomId.value || moderationActionId.value) return;
+  moderationActionId.value = commentId;
+  try {
+    const res = await approveComment(commentId, roomId.value);
+    if (res.code !== 0) {
+      message.error(res.message || '通过失败');
+      return;
+    }
+    message.success('已通过');
+    moderationList.value = moderationList.value.filter((x) => x.id !== commentId);
+  } catch (e: unknown) {
+    message.error(e instanceof Error ? e.message : '请求失败');
+  } finally {
+    moderationActionId.value = null;
+  }
+};
+
+const handleRejectModeration = async (commentId: string) => {
+  if (!roomId.value || moderationActionId.value) return;
+  moderationActionId.value = `r_${commentId}`;
+  try {
+    const res = await rejectComment(commentId, roomId.value);
+    if (res.code !== 0) {
+      message.error(res.message || '拒绝失败');
+      return;
+    }
+    message.success('已拒绝');
+    moderationList.value = moderationList.value.filter((x) => x.id !== commentId);
+  } catch (e: unknown) {
+    message.error(e instanceof Error ? e.message : '请求失败');
+  } finally {
+    moderationActionId.value = null;
+  }
+};
 
 // 确认弹窗
 const confirmDialogVisible = ref(false);
@@ -1216,6 +1369,13 @@ watch(audienceCount, (count) => {
 let audienceNameObserver: MutationObserver | null = null;
 
 watch(activeTab, (tab) => {
+  if (tab === 'moderation' && roomId.value) {
+    fetchPendingModeration();
+    startModerationPoll();
+  } else {
+    stopModerationPoll();
+  }
+
   if (tab === 'audience' && roomId.value) {
     loadMutedAndBannedLists();
 
@@ -1250,6 +1410,7 @@ watch(activeTab, (tab) => {
 });
 
 onUnmounted(() => {
+  stopModerationPoll();
   if (durationTimer) {
     clearInterval(durationTimer);
   }
@@ -1643,6 +1804,117 @@ onUnmounted(() => {
 
 .chat-stream-sidebar {
   height: 100%;
+}
+
+.mod-tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mod-tab-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #e54545;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+
+.moderation-tab {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.moderation-toolbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+}
+
+.moderation-error {
+  font-size: 12px;
+  color: #e54545;
+  flex: 1;
+  min-width: 0;
+}
+
+.moderation-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 12px;
+  font-size: 13px;
+  color: #86909c;
+  line-height: 1.5;
+}
+
+.moderation-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.moderation-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #eceff6;
+}
+
+.moderation-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.moderation-author {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d2129;
+}
+
+.moderation-time {
+  font-size: 11px;
+  color: #86909c;
+  flex-shrink: 0;
+}
+
+.moderation-text {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #4e5969;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.moderation-item-meta {
+  margin-bottom: 8px;
+}
+
+.moderation-id {
+  font-size: 11px;
+  color: #c0c4cc;
+  font-family: ui-monospace, monospace;
+}
+
+.moderation-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .audience-tab-wrapper {
