@@ -27,3 +27,4 @@ coverage
 # Env files (per-package .env is tracked by packages/vue3/.env explicitly)
 .env.local
 .env.*.local
+packages/server/config/.env

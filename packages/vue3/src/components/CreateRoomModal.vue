@@ -485,65 +485,62 @@ const handleSubmit = async () => {
       streamInfo.value = null;
       streamInfoError.value = '';
 
-      // 4. OBS 配置
+      // 4. OBS 配置：先 IM 导入 + 机器人 + 上麦，再生成推流地址（需 sdkAppId + 服务端签发的机器人 UserSig）
       if (useObsStreaming.value) {
-        // OBS 推流时机器人 ID 使用主播 ID + "_obs"
         const robotId = `${anchorId}_obs`;
-
-        // 先获取机器人推流信息（userId 必须是机器人 ID，需要异步获取匹配的 userSig）
-        try {
-          const pushInfo = await getStreamInfoAsync(roomId, robotId);
-          if (pushInfo) {
-            streamInfo.value = {
-              serverUrl: pushInfo.ServerUrl,
-              streamKey: pushInfo.StreamKey,
-            };
-          } else {
-            streamInfoError.value = '获取推流信息失败';
-          }
-        } catch (streamError: any) {
-          streamInfoError.value = streamError.message || '获取推流信息失败';
-        }
+        streamInfo.value = null;
+        streamInfoError.value = '';
 
         try {
-
+          obsSetupStatus.value = 'creating';
           const robotRes = await getRobotList(roomId);
           const robotList = robotRes.Response?.RobotList_Account || [];
           const hasRobot = robotList.includes(robotId);
 
-          const seatRes = await getSeatList(roomId);
+          const seatListRes = await getSeatList(roomId);
           const seatMembers = new Set<string>();
-          seatRes.Response?.SeatList?.forEach((seat: any) => {
+          seatListRes.Response?.SeatList?.forEach((seat: any) => {
             if (seat.Member_Account) seatMembers.add(seat.Member_Account);
           });
           const onSeat = seatMembers.has(robotId);
 
           if (!hasRobot) {
-            obsSetupStatus.value = 'creating';
-            // 先导入账号到 IM 账号系统（腾讯云要求：添加机器人前必须先导入账号）
             const importRes = await importAccount(robotId, `OBS Robot ${robotId}`);
             if (importRes.ErrorCode !== 0 && importRes.Error !== 0) {
-              // ErrorCode=70102 表示账号已存在，可以继续添加机器人
               if (importRes.ErrorCode !== 70102) {
-                throw new Error(importRes.ErrorInfo || '导入账号失败');
+                throw new Error(importRes.ErrorInfo || '导入 OBS 机器人账号失败');
               }
             }
-            // 添加机器人
             const addRes = await addRobot(roomId, [robotId]);
             if (addRes.ErrorCode !== 0) {
-              throw new Error(addRes.ErrorInfo || '添加机器人失败');
+              throw new Error(addRes.ErrorInfo || '添加 OBS 机器人失败');
             }
           }
 
           if (!onSeat) {
             obsSetupStatus.value = 'seating';
-            const seatRes = await pickUserOnSeat(roomId, robotId);
-            if (seatRes.ErrorCode !== 0) {
-              throw new Error(seatRes.ErrorInfo || '上麦失败');
+            const pickRes = await pickUserOnSeat(roomId, robotId);
+            if (pickRes.ErrorCode !== 0) {
+              throw new Error(pickRes.ErrorInfo || 'OBS 机器人上麦失败');
             }
           }
 
           obsSetupStatus.value = 'ready';
+
+          try {
+            const pushInfo = await getStreamInfoAsync(roomId, robotId);
+            if (pushInfo) {
+              streamInfo.value = {
+                serverUrl: pushInfo.ServerUrl,
+                streamKey: pushInfo.StreamKey,
+              };
+            } else {
+              streamInfoError.value =
+                '推流地址生成失败：缺少 SdkAppId 或无法为主播机器人签发 UserSig。请刷新页面后重试，或确认服务端已配置 SECRET_KEY 且已登录。';
+            }
+          } catch (streamError: any) {
+            streamInfoError.value = streamError?.message || '推流地址生成异常';
+          }
         } catch (obsError: any) {
           console.error('OBS 设置失败:', obsError);
           obsSetupStatus.value = 'error';

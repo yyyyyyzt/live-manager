@@ -296,6 +296,7 @@ const TRTC_RATE_LIMIT_WHITELIST = new Set([
   'get_gift_info_list',
   'portrait_get',        // 用户资料查询（只读），不需要限频
   'get_room_statistic',  // 房间统计（只读），不需要限频
+  'get_robot',           // 房间机器人列表（只读），host_entry OBS 门禁用
 ]);
 
 async function doTrtcRequest(url, data) {
@@ -429,6 +430,44 @@ async function executeTrtcProxy(creds, apiPath, body, domainOverride) {
   });
 }
 
+/** OBS 推流房与「主播网页入口」互斥：存在 `{主播}_obs` 机器人时禁止签发/消费 host_entry token */
+const HOST_ENTRY_OBS_ONLY_MESSAGE =
+  '本直播间为 OBS 推流模式，请使用推流地址通过 OBS 开播，不能使用主播网页链接。';
+
+/**
+ * 是否与前端 CreateRoomModal / room-list 的 OBS 判定一致：房间内机器人列表含 `{Owner}_obs`
+ * @param {import('express').Request} req
+ * @param {string} roomId
+ * @param {string} anchorUserId 房主/主播 IM 账号（与 Owner_Account 一致）
+ */
+async function roomHasObsRobot(req, roomId, anchorUserId) {
+  if (!roomId || !anchorUserId) return false;
+  const creds = getCredentials(req);
+  if (!creds) {
+    logger.warn('HOST_ENTRY_OBS_CHECK', '无 TRTC 凭证，跳过 OBS 门禁（不拦截）', { roomId });
+    return false;
+  }
+  try {
+    const robotRes = await executeTrtcProxy(creds, 'v4/live_engine_http_srv/get_robot', {
+      RoomId: String(roomId),
+    });
+    if (robotRes?.ErrorCode !== undefined && robotRes.ErrorCode !== 0) {
+      logger.warn('HOST_ENTRY_OBS_CHECK', 'get_robot 非成功，不拦截', {
+        roomId,
+        ErrorCode: robotRes.ErrorCode,
+        ErrorInfo: robotRes.ErrorInfo,
+      });
+      return false;
+    }
+    const list = robotRes?.Response?.RobotList_Account || robotRes?.RobotList_Account || [];
+    const robotId = `${String(anchorUserId)}_obs`;
+    return Array.isArray(list) && list.some((id) => String(id) === robotId);
+  } catch (e) {
+    logger.error('HOST_ENTRY_OBS_CHECK', 'get_robot 异常，不拦截', { roomId, err: e?.message });
+    return false;
+  }
+}
+
 apiRouter.post('/trtc_proxy', asyncHandler(async (req, res) => {
   const { apiPath, body: trtcBody, domain } = req.body;
   if (!apiPath) {
@@ -490,7 +529,7 @@ apiRouter.post('/get_room_info', createTuikitProxyHandler('get_room_info'));
 
 const { createToken: createHostEntryToken, verifyToken: verifyHostEntryToken, DEFAULT_TTL_SECONDS: HOST_ENTRY_TTL } = require('../services/hostEntryToken.js');
 
-apiRouter.post('/host_entry/issue', (req, res) => {
+apiRouter.post('/host_entry/issue', asyncHandler(async (req, res) => {
   const { roomId, userId, ttlSeconds } = req.body || {};
   if (!roomId) {
     res.json({ code: -1, message: 'roomId is required' });
@@ -500,6 +539,11 @@ apiRouter.post('/host_entry/issue', (req, res) => {
   const ownerId = String(userId || creds?.identifier || Config.Identifier || '');
   if (!ownerId) {
     res.json({ code: -1, message: 'userId is required' });
+    return;
+  }
+  if (await roomHasObsRobot(req, String(roomId), ownerId)) {
+    logger.info('HOST_ENTRY_ISSUE', '❌ OBS 推流房禁止生成主播网页入口', { roomId, userId: ownerId });
+    res.json({ code: -1, message: HOST_ENTRY_OBS_ONLY_MESSAGE });
     return;
   }
   const token = createHostEntryToken({ roomId: String(roomId), userId: ownerId, ttlSeconds });
@@ -522,9 +566,9 @@ apiRouter.post('/host_entry/issue', (req, res) => {
       expiresIn: Number(ttlSeconds) || HOST_ENTRY_TTL,
     },
   });
-});
+}, 'host_entry_issue', 'local'));
 
-apiRouter.post('/host_entry/consume', (req, res) => {
+apiRouter.post('/host_entry/consume', asyncHandler(async (req, res) => {
   const { token } = req.body || {};
   const result = verifyHostEntryToken(token);
   if (!result.ok) {
@@ -539,6 +583,15 @@ apiRouter.post('/host_entry/consume', (req, res) => {
   if (!isServerConfigured()) {
     logger.warn('HOST_ENTRY_CONSUME', '❌ 服务端未配置 SecretKey');
     res.status(500).json({ code: -1, message: 'server not configured' });
+    return;
+  }
+
+  if (await roomHasObsRobot(req, result.roomId, result.userId)) {
+    logger.info('HOST_ENTRY_CONSUME', '❌ OBS 推流房禁止消费主播网页入口 token', {
+      roomId: result.roomId,
+      userId: result.userId,
+    });
+    res.status(400).json({ code: -1, message: HOST_ENTRY_OBS_ONLY_MESSAGE });
     return;
   }
 
@@ -562,7 +615,7 @@ apiRouter.post('/host_entry/consume', (req, res) => {
       roomId: result.roomId,
     },
   });
-});
+}, 'host_entry_consume', 'local'));
 
 // ========== 健康检查 ==========
 

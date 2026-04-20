@@ -130,6 +130,7 @@ import {
   isServerConfiguredMode,
   getCredentials,
   getCurrentUserId,
+  saveCredentials,
 } from '@/api/auth';
 import type { UserPortraitProfile } from '@/api/auth';
 
@@ -212,6 +213,7 @@ const initSDK = async () => {
       try {
         const loginRes = await login({ sdkAppId: urlOverride.sdkAppId, secretKey: urlOverride.secretKey });
         if (loginRes.code === 0 && loginRes.data?.userId) {
+          saveCredentials(loginRes.data);
           const { userId, userSig, sdkAppId } = loginRes.data;
           localStorage.setItem('user_id', userId);
           localStorage.setItem('user_sig', userSig ?? '');
@@ -233,6 +235,7 @@ const initSDK = async () => {
     try {
       const loginRes = await login({});
       if (loginRes.code === 0 && loginRes.data) {
+        saveCredentials(loginRes.data);
         account = {
           sdkAppId: loginRes.data.sdkAppId ?? 0,
           userId: loginRes.data.userId ?? '',

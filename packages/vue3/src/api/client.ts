@@ -1,6 +1,14 @@
 import axios from 'axios';
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { initHttpClient, initAegis, getErrorMessage, getUrlOverrideParams, isServerConfigured } from '@live-manager/common';
+import {
+  initHttpClient,
+  initAegis,
+  getErrorMessage,
+  getUrlOverrideParams,
+  isServerConfigured,
+  isServerConfiguredMode,
+  setServerConfigured,
+} from '@live-manager/common';
 
 // API 基础配置
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
@@ -51,6 +59,11 @@ httpClient.interceptors.request.use(
     localStorage.removeItem('user_id');
     localStorage.removeItem('user_sig');
     localStorage.removeItem('sdk_app_id');
+
+    // localStorage 已标记服务端配置，但 sessionStorage 未同步时补齐（避免误走「非服务器配置」分支）
+    if (!urlOverride && isServerConfiguredMode() && !isServerConfigured()) {
+      setServerConfigured(true);
+    }
 
     // URL 无参数 → 检查是否服务器配置模式
     const configured = isServerConfigured();

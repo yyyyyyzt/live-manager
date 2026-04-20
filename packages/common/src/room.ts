@@ -172,6 +172,21 @@ export async function createRoom(params: {
     roomInfo.MaxSeatCount = Number(params.maxSeatCount);
   }
 
+  // Owner_Account 必须是已导入 IM 的账号，否则 create_room 常见 100002 invalid owner account
+  const importRes = await importAccount(
+    params.anchorId,
+    params.title?.trim() || '',
+    params.coverUrl?.trim() || ''
+  );
+  if (importRes.ErrorCode !== 0 && importRes.Error !== 0) {
+    if (importRes.ErrorCode !== 70102) {
+      return {
+        ErrorCode: importRes.ErrorCode,
+        ErrorInfo: importRes.ErrorInfo || '导入主播 IM 账号失败，无法创建房间',
+      } as CreateRoomResponse;
+    }
+  }
+
   const createResult = await trtcRequest(TRTCApi.createRoom, { RoomInfo: roomInfo }) as CreateRoomResponse;
 
   // 房间创建成功后再设置自定义信息（需要等房间创建完成后才能设置元数据）

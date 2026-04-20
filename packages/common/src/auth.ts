@@ -1,6 +1,12 @@
 import { post, get } from './client';
 import { TRTCApi, trtcRequest } from './trtc-client';
-import { isUrlOverrideMode, createAccountFromUrlOverride, getUrlOverrideParams } from './url-override';
+import {
+  isUrlOverrideMode,
+  createAccountFromUrlOverride,
+  getUrlOverrideParams,
+  setServerConfigured,
+  clearCache as clearUrlOverrideSessionCache,
+} from './url-override';
 import type {
   BasicUserInfo,
   CheckConfigResponse,
@@ -187,6 +193,8 @@ export async function batchGetUserProfilePortrait(
 
 // sessionStorage keys（凭证模式使用，会话级存储）
 const SS_CREDENTIALS = 'session_credentials';
+/** 服务端配置模式下 login 返回的 sdkAppId，供 getSdkAppId() 等纯前端逻辑使用（不含 userSig） */
+const SS_SERVER_SDK_APP_ID = 'lm_server_sdk_app_id';
 
 const CREDENTIAL_KEYS = {
   CONFIGURED: 'server_configured',
@@ -214,9 +222,17 @@ export function saveCredentials(data: LoginResponse['data']): void {
   if (data.configured) {
     // 服务端配置模式：只保存标记
     localStorage.setItem(CREDENTIAL_KEYS.CONFIGURED, 'true');
+    // 与 axios 拦截器 isServerConfigured()（读 sessionStorage）保持一致，否则误打「非服务器配置」且不发 x-user-* 头
+    setServerConfigured(true);
+    // login 仍会返回 sdkAppId；若不缓存，getSdkAppId() 恒为 0，OBS 推流 getStreamInfoAsync 会失败
+    if (data.sdkAppId && data.sdkAppId > 0) {
+      sessionStorage.setItem(SS_SERVER_SDK_APP_ID, String(data.sdkAppId));
+    }
   } else {
     // 凭证模式或 URL 覆盖模式：保存到 sessionStorage
     localStorage.setItem(CREDENTIAL_KEYS.CONFIGURED, 'false');
+    setServerConfigured(false);
+    sessionStorage.removeItem(SS_SERVER_SDK_APP_ID);
     const creds: SessionCredentials = {
       userId: data.userId ?? '',
       userSig: data.userSig ?? '',
@@ -292,6 +308,8 @@ export function isProxyMode(): boolean {
 export function clearCredentials(): void {
   localStorage.removeItem(CREDENTIAL_KEYS.CONFIGURED);
   sessionStorage.removeItem(SS_CREDENTIALS);
+  sessionStorage.removeItem(SS_SERVER_SDK_APP_ID);
+  clearUrlOverrideSessionCache();
   // 兼容旧版本清理
   localStorage.removeItem('auth_token');
   localStorage.removeItem('user_id');
@@ -312,7 +330,17 @@ export function getSdkAppId(): number {
     return override.sdkAppId;
   }
   const creds = getCredentials();
-  return creds?.sdkAppId || 0;
+  if (creds?.sdkAppId && creds.sdkAppId > 0) {
+    return creds.sdkAppId;
+  }
+  if (isServerConfiguredMode()) {
+    const raw = sessionStorage.getItem(SS_SERVER_SDK_APP_ID);
+    const n = Number(raw);
+    if (Number.isFinite(n) && n > 0) {
+      return n;
+    }
+  }
+  return 0;
 }
 
 /**
