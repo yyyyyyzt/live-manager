@@ -62,6 +62,8 @@ export const TRTCApi = {
   getSeatList: 'v4/room_engine_http_mic/get_seat_list',
   pickUserOnSeat: 'v4/room_engine_http_mic/pick_user_on_seat',
   kickUserOffSeat: 'v4/room_engine_http_mic/kick_user_off_seat',
+  /** 将用户移出直播间（REST 与 [RemoveUser](https://cloud.tencent.com/document/api/647/40496) 同类管控能力，字符串房间号走 TUIRoom 引擎 HTTP） */
+  kickUserOut: 'v4/room_engine_http_srv/kick_user_out',
   // 混流
   resumeMcuTask: 'v4/live_engine_http_srv/resume_mcu_task',
   // 用户资料

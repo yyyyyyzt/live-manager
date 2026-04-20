@@ -1,5 +1,6 @@
 import { post } from './client';
 import { trtcRequest, TRTCApi, getStreamInfoAsync } from './trtc-client';
+import { sendCustomMessage } from './chat';
 import type { CreateRoomResponse, GetLiveListResponse, StartObsLiveResponse, GetRobotResponse, GetSeatListResponse, SeatItem } from './types';
 
 // 字段映射
@@ -229,6 +230,64 @@ export async function updateRoomInfo(
 // 删除直播间
 export async function deleteRoom(roomId: string): Promise<any> {
   return trtcRequest(TRTCApi.destroyRoom, { RoomId: roomId });
+}
+
+/** 管理端自定义消息 BusinessId：观众端 TUIRiveKit / IM 需订阅并解析同名自定义消息 */
+export const LIVE_MANAGER_CUSTOM_BUSINESS_ID = 'live_mgr_action';
+
+export type LiveManagerCustomPayload =
+  | {
+      action: 'comment_visibility';
+      /** true 表示允许评论；false 表示仅隐藏/关闭评论（与房间 IsMessageDisabled 语义一致由管理端写入） */
+      enabled: boolean;
+      roomId: string;
+      ts: number;
+    }
+  | Record<string, unknown>;
+
+/**
+ * 向房间内广播管理端自定义信令（经 live_engine send_custom_msg）
+ */
+export async function broadcastLiveManagerSignal(roomId: string, payload: LiveManagerCustomPayload): Promise<any> {
+  return sendCustomMessage(roomId, LIVE_MANAGER_CUSTOM_BUSINESS_ID, JSON.stringify(payload), 'admin');
+}
+
+/**
+ * 开关「全员可发评论」：更新房间 IsMessageDisabled，并广播 comment_visibility 供观众端即时刷新 UI。
+ * @param commentsEnabled true 允许评论；false 全员禁言（与 updateRoomInfo isMessageDisabled 相反）
+ */
+export async function setRoomCommentsEnabled(roomId: string, commentsEnabled: boolean): Promise<{
+  updateResult: any;
+  signalResult?: any;
+}> {
+  const updateResult = await updateRoomInfo(roomId, { isMessageDisabled: !commentsEnabled });
+  let signalResult: any;
+  try {
+    signalResult = await broadcastLiveManagerSignal(roomId, {
+      action: 'comment_visibility',
+      enabled: commentsEnabled,
+      roomId,
+      ts: Date.now(),
+    });
+  } catch (e: any) {
+    signalResult = { ErrorCode: -1, ErrorInfo: e?.message || 'broadcast failed' };
+  }
+  return { updateResult, signalResult };
+}
+
+/**
+ * 将观众移出当前直播房间（REST kick_user_out，参见腾讯云「移出用户」能力说明 https://cloud.tencent.com/document/product/647/37078 ）
+ */
+export async function kickUsersOutRoom(
+  roomId: string,
+  memberAccounts: string[],
+  reason = '管理员移出房间'
+): Promise<{ ErrorCode: number; ErrorInfo?: string }> {
+  return trtcRequest(TRTCApi.kickUserOut, {
+    RoomId: roomId,
+    MemberList_Account: memberAccounts,
+    Reason: reason,
+  });
 }
 
 // 禁言成员

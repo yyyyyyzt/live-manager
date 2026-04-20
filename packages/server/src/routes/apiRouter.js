@@ -297,6 +297,7 @@ const TRTC_RATE_LIMIT_WHITELIST = new Set([
   'portrait_get',        // 用户资料查询（只读），不需要限频
   'get_room_statistic',  // 房间统计（只读），不需要限频
   'get_robot',           // 房间机器人列表（只读），host_entry OBS 门禁用
+  'kick_user_out',       // 管理端移出观众（低频），避免排队阻塞
 ]);
 
 async function doTrtcRequest(url, data) {
