@@ -142,5 +142,13 @@ pending → rejected（已拒绝，不进入已发布列表）
 
 ## 相关代码
 
-- 路由：`packages/server/src/routes/moderationRoutes.js`
-- 存储：`packages/server/src/services/moderation/memoryModerationStore.js`（含 `TODO: Redis`）
+- 审核服务：`packages/audit-server`（Redis 存储 + `/api/moderation/*`）
+- 管理端代理：`packages/server` 的 `GET/POST /api/moderation/...`（注入 `X-Admin-Token`，见 `apiRouter.js`）
+- 控制台审核 UI：直播间详情 `room-control` 右侧 **「待审评论」** 标签页
+
+环境变量（管理端 server）：
+
+| 变量 | 说明 |
+|------|------|
+| `AUDIT_SERVER_URL` | audit-server 根地址，默认 `http://127.0.0.1:3080` |
+| `AUDIT_ADMIN_TOKEN` | 与 audit-server 的 `AUDIT_ADMIN_TOKEN` 一致，默认 `dev-admin-token` |
