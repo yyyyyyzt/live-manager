@@ -618,6 +618,65 @@ apiRouter.post('/host_entry/consume', asyncHandler(async (req, res) => {
   });
 }, 'host_entry_consume', 'local'));
 
+/**
+ * 主播页结束直播：用 host_entry token 校验身份后，以房主 UserSig 调用 destroy_room。
+ * 避免前端 SDK endLive 在非房主身份下触发 100006（无权解散房间）。
+ */
+apiRouter.post('/host_entry/destroy_room', asyncHandler(async (req, res) => {
+  const { token, roomId: bodyRoomId } = req.body || {};
+  const verified = verifyHostEntryToken(token);
+  if (!verified.ok) {
+    logger.warn('HOST_ENTRY_DESTROY', `token 校验失败: ${verified.error}`);
+    res.status(400).json({ code: -1, message: `invalid token (${verified.error})` });
+    return;
+  }
+  if (!isServerConfigured()) {
+    res.status(500).json({ code: -1, message: 'server not configured' });
+    return;
+  }
+  if (bodyRoomId && String(bodyRoomId) !== String(verified.roomId)) {
+    res.status(400).json({ code: -1, message: 'roomId mismatch' });
+    return;
+  }
+  if (await roomHasObsRobot(req, verified.roomId, verified.userId)) {
+    res.status(400).json({ code: -1, message: HOST_ENTRY_OBS_ONLY_MESSAGE });
+    return;
+  }
+  const sigInfo = getUserSig(verified.userId);
+  if (!sigInfo || !sigInfo.UserSig) {
+    logger.error('HOST_ENTRY_DESTROY', '签发房主 UserSig 失败', { userId: verified.userId });
+    res.status(500).json({ code: -1, message: 'failed to sign userSig' });
+    return;
+  }
+  const ownerCreds = {
+    sdkAppId: sigInfo.SdkAppId,
+    identifier: verified.userId,
+    userSig: sigInfo.UserSig,
+  };
+  const trtcRes = await executeTrtcProxy(
+    ownerCreds,
+    'v4/live_engine_http_srv/destroy_room',
+    { RoomId: String(verified.roomId) }
+  );
+  const ec = trtcRes?.ErrorCode;
+  const ok = ec === 0 || ec === undefined;
+  if (ok) {
+    logger.info('HOST_ENTRY_DESTROY', '✅ 房主解散房间成功', { roomId: verified.roomId });
+    res.json({ code: 0, message: 'success', data: trtcRes });
+    return;
+  }
+  logger.warn('HOST_ENTRY_DESTROY', 'destroy_room 非成功', {
+    roomId: verified.roomId,
+    ErrorCode: trtcRes?.ErrorCode,
+    ErrorInfo: trtcRes?.ErrorInfo,
+  });
+  res.json({
+    code: -1,
+    message: trtcRes?.ErrorInfo || 'destroy_room failed',
+    data: trtcRes,
+  });
+}, 'host_entry_destroy_room', 'local'));
+
 // ========== 健康检查 ==========
 
 apiRouter.get('/test', (_, res) => {
