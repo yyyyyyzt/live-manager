@@ -1,13 +1,21 @@
 <template>
   <n-modal
     v-model:show="dialogVisible"
-    header="编辑直播间"
-    :width="560"
-    placement="center"
+    preset="card"
+    :mask-closable="false"
+    :bordered="false"
+    title="编辑直播间"
+    :style="{ width: '560px', maxWidth: 'calc(100vw - 32px)' }"
     class="edit-room-modal"
     @close="handleClose"
   >
-    <n-form class="edit-room-form" :label-width="100" :colon="false">
+    <n-form
+      class="edit-room-form"
+      label-placement="left"
+      label-align="right"
+      :label-width="100"
+      require-mark-placement="left"
+    >
       <!-- 直播间ID -->
       <n-form-item label="直播间 ID">
         <n-input
@@ -18,7 +26,7 @@
       </n-form-item>
 
       <!-- 直播间标题 -->
-      <n-form-item label="直播间标题" :required-mark="true">
+      <n-form-item label="直播间标题" required>
         <n-input
           v-model:value="formData.title"
           placeholder="请输入直播间标题"
@@ -50,45 +58,47 @@
       </n-form-item>
 
       <!-- 自定义信息 - 折叠/展开区域 -->
-      <div class="custom-info-section">
-        <div class="custom-info-toggle" @click="customInfoExpanded = !customInfoExpanded">
-          <ChevronDown v-if="customInfoExpanded" :size="16" />
-          <ChevronRight v-else :size="16" />
-          <span>自定义信息</span>
-          <span v-if="customInfos.length > 0" class="custom-info-count">{{ customInfos.length }}</span>
-        </div>
-        <div v-if="customInfoExpanded" class="custom-info-container">
-          <div v-for="(info, index) in customInfos" :key="index" class="custom-info-row">
-            <div class="custom-input-wrap">
-              <n-input
-                v-model:value="info.key"
-                placeholder="请输入Key"
-                :status="getKeyBytes(info.key) > CUSTOM_INFO_LIMITS.maxKeyBytes || isCustomInfoKeyMissing(info) ? 'error' : undefined"
-              />
+      <n-form-item label=" " :show-feedback="false" class="custom-info-form-item">
+        <div class="custom-info-section">
+          <div class="custom-info-toggle" @click="customInfoExpanded = !customInfoExpanded">
+            <ChevronDown v-if="customInfoExpanded" :size="16" />
+            <ChevronRight v-else :size="16" />
+            <span>自定义信息</span>
+            <span v-if="customInfos.length > 0" class="custom-info-count">{{ customInfos.length }}</span>
+          </div>
+          <div v-if="customInfoExpanded" class="custom-info-container">
+            <div v-for="(info, index) in customInfos" :key="index" class="custom-info-row">
+              <div class="custom-input-wrap">
+                <n-input
+                  v-model:value="info.key"
+                  placeholder="请输入 Key"
+                  :status="getKeyBytes(info.key) > CUSTOM_INFO_LIMITS.maxKeyBytes || isCustomInfoKeyMissing(info) ? 'error' : undefined"
+                />
+              </div>
+              <div class="custom-input-wrap custom-value-wrap">
+                <n-input
+                  v-model:value="info.value"
+                  placeholder="请输入 Value"
+                  :status="getValueBytes(info.value) > CUSTOM_INFO_LIMITS.maxValueBytes ? 'error' : undefined"
+                />
+              </div>
+              <n-button quaternary circle size="small" @click="removeCustomInfo(index)">
+                <template #icon><X /></template>
+              </n-button>
             </div>
-            <div class="custom-input-wrap custom-value-wrap">
-              <n-input
-                v-model:value="info.value"
-                placeholder="请输入Value"
-                :status="getValueBytes(info.value) > CUSTOM_INFO_LIMITS.maxValueBytes ? 'error' : undefined"
-              />
-            </div>
-            <n-button quaternary circle @click="removeCustomInfo(index)">
-              <X />
+            <n-button
+              v-if="customInfos.length < CUSTOM_INFO_LIMITS.maxCount"
+              dashed
+              size="small"
+              block
+              @click="addCustomInfo"
+            >
+              <template #icon><Plus :size="14" /></template>
+              添加
             </n-button>
           </div>
-          <n-button style="width:80px"
-            v-if="customInfos.length < CUSTOM_INFO_LIMITS.maxCount"
-            quaternary
-            round
-            @click="addCustomInfo"
-            type="primary"
-          >
-            <template #icon><Plus /></template>
-            添加
-          </n-button>
         </div>
-      </div>
+      </n-form-item>
     </n-form>
 
     <template #footer>
@@ -416,13 +426,29 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
-/* TDesign Form 适配 */
+/* Modal 主体：限制最大高度、内容区可滚动 */
+.edit-room-modal :deep(.n-card__content) {
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  padding-top: 16px;
+}
+
+.edit-room-modal :deep(.n-card-header) {
+  padding-bottom: 8px;
+}
+
+/* FormItem 间距 */
 .edit-room-modal :deep(.n-form-item) {
   margin-bottom: 16px;
 }
 
-.edit-room-modal :deep(.t-form__item:last-child) {
+.edit-room-modal :deep(.n-form-item:last-child) {
   margin-bottom: 0;
+}
+
+/* ImageUpload 在 FormItem 内自适应宽度 */
+.edit-room-modal :deep(.n-form-item .image-upload-container) {
+  width: 100%;
 }
 
 /* 输入框内的字节计数后缀 */
@@ -434,18 +460,6 @@ const handleSubmit = async () => {
 
 .input-suffix-count.byte-overflow {
   color: #E34D59;
-}
-
-/* ImageUpload 在 FormItem 内自适应宽度 */
-.edit-room-modal :deep(.t-form__controls-content .image-upload-container) {
-  width: 100%;
-}
-
-.field-hint {
-  margin-left: 8px;
-  font-size: 12px;
-  color: #888;
-  font-weight: normal;
 }
 
 /* 自定义信息折叠/展开区域 */
