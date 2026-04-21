@@ -32,6 +32,8 @@ export {
   kickUsersOutRoom,
   setRoomCommentsEnabled,
   LIVE_MANAGER_CUSTOM_BUSINESS_ID,
+  batchAddCrowdRobotsToRoom,
+  parseRobotListFromGetRobotResponse,
 } from '@live-manager/common';
 export type {
   VideoQuality,

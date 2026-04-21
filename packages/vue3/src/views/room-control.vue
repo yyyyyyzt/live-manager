@@ -150,6 +150,22 @@
 
             <!-- 观众列表 -->
             <div v-show="activeTab === 'audience'" class="audience-tab-wrapper">
+              <div class="audience-crowd-toolbar">
+                <n-tooltip placement="top">
+                  <template #trigger>
+                    <n-button
+                      size="small"
+                      secondary
+                      :disabled="!roomId || liveEndedOverlayVisible || crowdRobotsLoading"
+                      :loading="crowdRobotsLoading"
+                      @click="openCrowdRobotsModal"
+                    >
+                      凑数机器人
+                    </n-button>
+                  </template>
+                  批量导入 IM 并 add_robot，用于临时拉高在线人数；UserID 为 auto_robotN 递增
+                </n-tooltip>
+              </div>
               <div class="audience-list-area">
                 <LiveAudienceList height="99%">
                   <template #audience-mark="{ audience }">
@@ -376,6 +392,37 @@
       </n-space>
     </n-modal>
 
+    <!-- 凑数机器人：数量 -->
+    <n-modal
+      v-model:show="crowdRobotsModalVisible"
+      preset="card"
+      title="批量添加凑数机器人"
+      :style="{ width: '440px' }"
+      :bordered="false"
+      :mask-closable="!crowdRobotsLoading"
+      :close-on-esc="!crowdRobotsLoading"
+    >
+      <p class="crowd-robots-hint">
+        将按 <code>auto_robot1</code>、<code>auto_robot2</code>… 在<strong>当前房间已有机器人</strong>之后顺延编号；先
+        <code>account_import</code> 再 <code>add_robot</code>，单次最多 200 个。管理端 TRTC 代理对写接口有排队限频，一次
+        几十～上百个账号导入可能需要一两分钟，请勿关闭页面。
+      </p>
+      <div class="crowd-robots-count-row">
+        <span class="crowd-robots-count-label">数量</span>
+        <n-input-number
+          v-model:value="crowdRobotsCount"
+          :min="1"
+          :max="200"
+          :disabled="crowdRobotsLoading"
+          style="width: 100%"
+        />
+      </div>
+      <n-space justify="end" style="margin-top: 16px">
+        <n-button :disabled="crowdRobotsLoading" @click="crowdRobotsModalVisible = false">取消</n-button>
+        <n-button type="primary" :loading="crowdRobotsLoading" @click="handleCrowdRobotsSubmit">开始添加</n-button>
+      </n-space>
+    </n-modal>
+
     <!-- 观众操作下拉菜单（使用统一的下拉菜单组件） -->
     <Teleport to="body">
       <div
@@ -471,6 +518,7 @@ import {
   getMutedMemberList,
   kickUsersOutRoom,
   setRoomCommentsEnabled,
+  batchAddCrowdRobotsToRoom,
 } from '@/api/room';
 import {
   getPendingComments,
@@ -655,6 +703,49 @@ const confirmDialogVisible = ref(false);
 const confirmDialogTitle = ref('');
 const confirmDialogContent = ref('');
 const confirmAction = ref<(() => void) | null>(null);
+
+/** 观众列表：批量凑数机器人（仅管理端 REST，不上麦） */
+const crowdRobotsModalVisible = ref(false);
+const crowdRobotsCount = ref<number | null>(50);
+const crowdRobotsLoading = ref(false);
+
+const openCrowdRobotsModal = () => {
+  if (!roomId.value || liveEndedOverlayVisible.value) return;
+  crowdRobotsCount.value = 50;
+  crowdRobotsModalVisible.value = true;
+};
+
+const handleCrowdRobotsSubmit = async () => {
+  if (!roomId.value || crowdRobotsLoading.value) return;
+  const n = Math.floor(Number(crowdRobotsCount.value ?? 0));
+  if (n < 1 || n > 200) {
+    message.error('请输入 1～200 之间的数量');
+    return;
+  }
+  crowdRobotsLoading.value = true;
+  try {
+    const result = await batchAddCrowdRobotsToRoom(roomId.value, n);
+    const idRange =
+      result.plannedUserIds.length === 0
+        ? ''
+        : result.plannedUserIds.length === 1
+          ? result.plannedUserIds[0]
+          : `${result.plannedUserIds[0]} … ${result.plannedUserIds[result.plannedUserIds.length - 1]}`;
+    if (result.failures.length > 0) {
+      message.warning(
+        `成功加入 ${result.addedCount} / ${result.requested} 个（${idRange}）。${result.failures.length} 条失败，详情见控制台`
+      );
+      console.warn('[RoomControl] batchAddCrowdRobotsToRoom failures', result.failures);
+    } else {
+      message.success(`已加入 ${result.addedCount} 个凑数机器人（${idRange}）`);
+    }
+    crowdRobotsModalVisible.value = false;
+  } catch (e: unknown) {
+    message.error(e instanceof Error ? e.message : '批量添加失败');
+  } finally {
+    crowdRobotsLoading.value = false;
+  }
+};
 
 // 计时器
 let durationTimer: number | null = null;
@@ -1921,6 +2012,38 @@ onUnmounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+.audience-crowd-toolbar {
+  flex-shrink: 0;
+  padding: 0 0 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  margin-bottom: 8px;
+}
+
+.crowd-robots-hint {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.crowd-robots-hint code {
+  font-size: 12px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.crowd-robots-count-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.crowd-robots-count-label {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.75);
 }
 
 .audience-list-area {

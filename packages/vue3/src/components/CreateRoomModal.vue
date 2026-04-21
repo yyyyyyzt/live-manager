@@ -224,7 +224,16 @@
 import { ref, computed, watch } from 'vue';
 import { ChevronDown, ChevronRight, Plus, X, Copy } from 'lucide-vue-next';
 import { message } from '@/utils/message';
-import { createRoom, addRobot, importAccount, pickUserOnSeat, getRobotList, getSeatList, getStreamInfoAsync } from '@/api/room';
+import {
+  createRoom,
+  addRobot,
+  importAccount,
+  pickUserOnSeat,
+  getRobotList,
+  getSeatList,
+  getStreamInfoAsync,
+  parseRobotListFromGetRobotResponse,
+} from '@/api/room';
 import { getErrorMessage, resolveImageUploadUrl, ImageUploadResolveError } from '@live-manager/common';
 import ImageUpload from './ImageUpload.vue';
 import { copyText } from '@/utils';
@@ -350,6 +359,17 @@ const successDescription = computed(() => {
 const successDescriptionError = computed(() => obsSetupStatus.value === 'error' || !!streamInfoError.value);
 
 const isCustomInfoKeyMissing = (info: CustomInfo) => !info.key.trim() && !!info.value.trim();
+
+/** 浏览器控制台调试：对齐腾讯云 REST 的 RequestId，便于工单 / 后台查日志 */
+function logObsTrtc(step: string, res: unknown, extra?: Record<string, unknown>) {
+  const r = res as Record<string, unknown> | null | undefined;
+  console.log(`[Live-OBS] ${step}`, {
+    RequestId: r?.RequestId,
+    ErrorCode: r?.ErrorCode ?? r?.Error,
+    ErrorInfo: r?.ErrorInfo,
+    ...extra,
+  });
+}
 
 const handleFileReady = (file: File | Blob | null) => {
   hasPendingCover.value = !!file;
@@ -480,6 +500,12 @@ const handleSubmit = async () => {
 
     // 3. 创建房间
     const response = await createRoom(params);
+    if (useObsStreaming.value) {
+      logObsTrtc('createRoom() 返回（含 create_room 等，详见上方 [Live-OBS][createRoom]）', response, {
+        roomId,
+        anchorId,
+      });
+    }
 
     if (response.ErrorCode === 0 || response.ErrorCode === undefined) {
       streamInfo.value = null;
@@ -494,10 +520,12 @@ const handleSubmit = async () => {
         try {
           obsSetupStatus.value = 'creating';
           const robotRes = await getRobotList(roomId);
-          const robotList = robotRes.Response?.RobotList_Account || [];
+          logObsTrtc('get_robot', robotRes, { roomId, robotId });
+          const robotList = parseRobotListFromGetRobotResponse(robotRes);
           const hasRobot = robotList.includes(robotId);
 
           const seatListRes = await getSeatList(roomId);
+          logObsTrtc('get_seat_list', seatListRes, { roomId, robotId });
           const seatMembers = new Set<string>();
           seatListRes.Response?.SeatList?.forEach((seat: any) => {
             if (seat.Member_Account) seatMembers.add(seat.Member_Account);
@@ -506,12 +534,14 @@ const handleSubmit = async () => {
 
           if (!hasRobot) {
             const importRes = await importAccount(robotId, `OBS Robot ${robotId}`);
+            logObsTrtc('account_import (robot)', importRes, { roomId, robotId });
             if (importRes.ErrorCode !== 0 && importRes.Error !== 0) {
               if (importRes.ErrorCode !== 70102) {
                 throw new Error(importRes.ErrorInfo || '导入 OBS 机器人账号失败');
               }
             }
             const addRes = await addRobot(roomId, [robotId]);
+            logObsTrtc('add_robot', addRes, { roomId, robotId });
             if (addRes.ErrorCode !== 0) {
               throw new Error(addRes.ErrorInfo || '添加 OBS 机器人失败');
             }
@@ -520,6 +550,7 @@ const handleSubmit = async () => {
           if (!onSeat) {
             obsSetupStatus.value = 'seating';
             const pickRes = await pickUserOnSeat(roomId, robotId);
+            logObsTrtc('pick_user_on_seat', pickRes, { roomId, robotId, Index: 0 });
             if (pickRes.ErrorCode !== 0) {
               throw new Error(pickRes.ErrorInfo || 'OBS 机器人上麦失败');
             }

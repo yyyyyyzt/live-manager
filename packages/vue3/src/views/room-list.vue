@@ -273,6 +273,7 @@ import {
   getStreamInfoAsync,
   getRobotList,
   getSeatList,
+  parseRobotListFromGetRobotResponse,
 } from '@/api/room';
 import type { RoomListItem, StreamInfo } from '@/types';
 import { getUploadConfig } from '@/api/upload';
@@ -523,7 +524,9 @@ const handleShowDetail = async (room: Room) => {
 
   try {
     const [robotList, seatMembers] = await Promise.all([
-      getRobotList(room.RoomId).then(res => res.Response?.RobotList_Account || []).catch(() => [] as string[]),
+      getRobotList(room.RoomId)
+        .then((res) => parseRobotListFromGetRobotResponse(res))
+        .catch(() => [] as string[]),
       getSeatList(room.RoomId).then(res => {
         const members = new Set<string>();
         res.Response?.SeatList?.forEach(seat => {

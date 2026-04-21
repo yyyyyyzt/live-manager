@@ -172,6 +172,8 @@ export interface GetSeatListResponse {
 export interface GetRobotResponse {
   ErrorCode: number;
   ErrorInfo?: string;
+  /** 部分网关/代理可能与 Response 并列返回机器人列表 */
+  RobotList_Account?: string[];
   Response?: {
     RobotList_Account: string[];
   };

@@ -1,7 +1,14 @@
 import { post } from './client';
 import { trtcRequest, TRTCApi, getStreamInfoAsync } from './trtc-client';
 import { sendCustomMessage } from './chat';
-import type { CreateRoomResponse, GetLiveListResponse, StartObsLiveResponse, GetRobotResponse, GetSeatListResponse, SeatItem } from './types';
+import type {
+  CreateRoomResponse,
+  GetLiveListResponse,
+  StartObsLiveResponse,
+  GetRobotResponse,
+  GetSeatListResponse,
+  SeatItem,
+} from './types';
 
 // 字段映射
 function mapRoomInfo(roomInfo: any) {
@@ -179,6 +186,15 @@ export async function createRoom(params: {
     params.title?.trim() || '',
     params.coverUrl?.trim() || ''
   );
+  if (params.useObsStreaming) {
+    console.log('[Live-OBS][createRoom] account_import (anchor)', {
+      RoomId: params.roomId,
+      UserID: params.anchorId,
+      RequestId: (importRes as any)?.RequestId,
+      ErrorCode: (importRes as any)?.ErrorCode ?? (importRes as any)?.Error,
+      ErrorInfo: (importRes as any)?.ErrorInfo,
+    });
+  }
   if (importRes.ErrorCode !== 0 && importRes.Error !== 0) {
     if (importRes.ErrorCode !== 70102) {
       return {
@@ -189,6 +205,14 @@ export async function createRoom(params: {
   }
 
   const createResult = await trtcRequest(TRTCApi.createRoom, { RoomInfo: roomInfo }) as CreateRoomResponse;
+  if (params.useObsStreaming) {
+    console.log('[Live-OBS][createRoom] create_room', {
+      RoomId: params.roomId,
+      RequestId: (createResult as any)?.RequestId,
+      ErrorCode: createResult.ErrorCode,
+      ErrorInfo: createResult.ErrorInfo,
+    });
+  }
 
   // 房间创建成功后再设置自定义信息（需要等房间创建完成后才能设置元数据）
   if (params.customInfo && Object.keys(params.customInfo).length > 0) {
@@ -403,4 +427,200 @@ export async function addRobot(roomId: string, robotAccounts: string[]): Promise
 // 导入单个账号到 IM 账号系统（机器人需先导入才能添加）
 export async function importAccount(userId: string, nick?: string, faceUrl?: string): Promise<{ ErrorCode: number; ErrorInfo?: string; Error: number }> {
   return trtcRequest(TRTCApi.importAccount, { UserID: userId, Nick: nick || '', FaceUrl: faceUrl || '' });
+}
+
+/** 凑数机器人 UserID 前缀，与房间已有机器人列表对齐递增，避免重复 */
+export const CROWD_ROBOT_USER_ID_PREFIX = 'auto_robot';
+
+export interface CrowdRobotBatchFailure {
+  userId: string;
+  phase: 'import' | 'add_robot';
+  ErrorCode: number;
+  ErrorInfo?: string;
+}
+
+export interface BatchAddCrowdRobotsResult {
+  roomId: string;
+  requested: number;
+  plannedUserIds: string[];
+  importReadyCount: number;
+  addedCount: number;
+  failures: CrowdRobotBatchFailure[];
+}
+
+/** 解析 get_robot 返回的机器人 UserID 列表（兼容 Response 内与根级 RobotList_Account） */
+export function parseRobotListFromGetRobotResponse(res: GetRobotResponse): string[] {
+  const fromNested = res.Response?.RobotList_Account;
+  if (Array.isArray(fromNested)) return fromNested.map(String);
+  const fromRoot = res.RobotList_Account;
+  if (Array.isArray(fromRoot)) return fromRoot.map(String);
+  return [];
+}
+
+function crowdRobotNextIndexStorageKey(roomId: string): string {
+  return `live_mgr_crowd_robot_next_${roomId}`;
+}
+
+/** 本标签页内记录的「下一个 auto_robot 数字后缀」，防止 get_robot 短暂为空或与云端不一致时重复从 1 开始 */
+function readLocalCrowdRobotNextIndex(roomId: string): number {
+  try {
+    const raw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(crowdRobotNextIndexStorageKey(roomId)) : null;
+    if (raw == null || raw === '') return 1;
+    const n = parseInt(raw, 10);
+    return Number.isFinite(n) && n >= 1 ? n : 1;
+  } catch {
+    return 1;
+  }
+}
+
+function writeLocalCrowdRobotNextIndex(roomId: string, nextNumericSuffix: number): void {
+  try {
+    if (typeof sessionStorage === 'undefined') return;
+    sessionStorage.setItem(crowdRobotNextIndexStorageKey(roomId), String(Math.max(1, Math.floor(nextNumericSuffix))));
+  } catch {
+    /* 无痕模式等 */
+  }
+}
+
+function nextCrowdRobotIndex(existingRobotUserIds: string[]): number {
+  const re = /^auto_robot(\d+)$/;
+  let max = 0;
+  for (const id of existingRobotUserIds) {
+    const m = String(id).match(re);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  }
+  return max + 1;
+}
+
+/** 批量 add_robot 失败时按单个重试；已在房内等幂等情况计为成功 */
+async function addRobotsChunkWithFallback(
+  roomId: string,
+  chunk: string[]
+): Promise<{ added: number; failures: CrowdRobotBatchFailure[] }> {
+  const batchRes = await addRobot(roomId, chunk);
+  if (batchRes.ErrorCode === 0 || batchRes.ErrorCode === undefined) {
+    return { added: chunk.length, failures: [] };
+  }
+
+  let added = 0;
+  const failures: CrowdRobotBatchFailure[] = [];
+  for (const userId of chunk) {
+    const one = await addRobot(roomId, [userId]);
+    if (one.ErrorCode === 0 || one.ErrorCode === undefined) {
+      added += 1;
+      continue;
+    }
+    const info = String(one.ErrorInfo || '');
+    const lower = info.toLowerCase();
+    const looksAlreadyInRoom =
+      lower.includes('already') ||
+      lower.includes('duplicate') ||
+      lower.includes('exist') ||
+      info.includes('已') ||
+      info.includes('重复') ||
+      info.includes('已在');
+    if (looksAlreadyInRoom) {
+      added += 1;
+      continue;
+    }
+    failures.push({
+      userId,
+      phase: 'add_robot',
+      ErrorCode: one.ErrorCode ?? -1,
+      ErrorInfo: one.ErrorInfo,
+    });
+  }
+  return { added, failures };
+}
+
+function importAccountOkForRobot(res: { ErrorCode: number; ErrorInfo?: string; Error: number }): boolean {
+  if (res.ErrorCode === 70102) return true;
+  return !(res.ErrorCode !== 0 && res.Error !== 0);
+}
+
+/**
+ * 批量导入 IM 账号并调用 add_robot 加入房间（仅作在线人数凑数，不上麦）。
+ * 需已具备管理端登录态（trtc_proxy）。
+ */
+export async function batchAddCrowdRobotsToRoom(
+  roomId: string,
+  count: number,
+  options?: { importConcurrency?: number; addRobotChunkSize?: number }
+): Promise<BatchAddCrowdRobotsResult> {
+  const importConcurrency = Math.max(1, Math.min(20, options?.importConcurrency ?? 10));
+  const addRobotChunkSize = Math.max(1, Math.min(50, options?.addRobotChunkSize ?? 20));
+
+  const safeCount = Math.floor(Number(count));
+  if (!roomId || safeCount < 1 || safeCount > 200) {
+    throw new Error('数量需在 1～200 之间');
+  }
+
+  const robotRes = await getRobotList(roomId);
+  if (robotRes.ErrorCode !== undefined && robotRes.ErrorCode !== 0) {
+    throw new Error(robotRes.ErrorInfo || `拉取房间机器人列表失败 (${robotRes.ErrorCode})`);
+  }
+
+  const existing = parseRobotListFromGetRobotResponse(robotRes);
+  const fromServer = nextCrowdRobotIndex(existing);
+  const fromLocal = readLocalCrowdRobotNextIndex(roomId);
+  const start = Math.max(fromServer, fromLocal);
+  const plannedUserIds: string[] = [];
+  for (let i = 0; i < safeCount; i++) {
+    plannedUserIds.push(`${CROWD_ROBOT_USER_ID_PREFIX}${start + i}`);
+  }
+
+  if (typeof console !== 'undefined' && console.info) {
+    console.info('[batchAddCrowdRobotsToRoom]', {
+      roomId,
+      existingRobotCount: existing.length,
+      fromServer,
+      fromLocal,
+      start,
+      plannedRange: `${plannedUserIds[0]}…${plannedUserIds[plannedUserIds.length - 1]}`,
+    });
+  }
+
+  const failures: CrowdRobotBatchFailure[] = [];
+  const idsReadyForAdd: string[] = [];
+
+  for (let offset = 0; offset < plannedUserIds.length; offset += importConcurrency) {
+    const slice = plannedUserIds.slice(offset, offset + importConcurrency);
+    const results = await Promise.all(
+      slice.map(async (userId) => {
+        const importRes = await importAccount(userId, `凑数 ${userId}`, '');
+        return { userId, importRes };
+      })
+    );
+    for (const { userId, importRes } of results) {
+      if (importAccountOkForRobot(importRes)) {
+        idsReadyForAdd.push(userId);
+      } else {
+        failures.push({
+          userId,
+          phase: 'import',
+          ErrorCode: importRes.ErrorCode || importRes.Error || -1,
+          ErrorInfo: importRes.ErrorInfo,
+        });
+      }
+    }
+  }
+
+  let addedCount = 0;
+  for (let offset = 0; offset < idsReadyForAdd.length; offset += addRobotChunkSize) {
+    const chunk = idsReadyForAdd.slice(offset, offset + addRobotChunkSize);
+    const { added, failures: chunkFails } = await addRobotsChunkWithFallback(roomId, chunk);
+    addedCount += added;
+    failures.push(...chunkFails);
+  }
+
+  writeLocalCrowdRobotNextIndex(roomId, start + safeCount);
+
+  return {
+    roomId,
+    requested: safeCount,
+    plannedUserIds,
+    importReadyCount: idsReadyForAdd.length,
+    addedCount,
+    failures,
+  };
 }

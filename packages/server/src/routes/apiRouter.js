@@ -205,9 +205,15 @@ apiRouter.post('/login', (req, res) => {
 // 生成 UserSig
 apiRouter.post('/get_user_sig', (req, res) => {
   const { userId } = req.body;
+  const obsSig = shouldLogGetUserSigAsObsFlow(userId);
+  logger.info('Live-OBS-SERVER', '📤 get_user_sig（本地签发，非腾讯云 RequestId）', {
+    userId: userId || '(missing)',
+    obsRelated: obsSig,
+  });
   if (!userId) {
     const errorMsg = 'userId is required';
     logger.warn('GET_USER_SIG', errorMsg, { body: req.body });
+    logger.warn('Live-OBS-SERVER', '❌ get_user_sig 参数缺失', { bodyKeys: Object.keys(req.body || {}) });
     res.json({ code: -1, message: errorMsg });
     return;
   }
@@ -215,6 +221,7 @@ apiRouter.post('/get_user_sig', (req, res) => {
   if (!isServerConfigured()) {
     const errorMsg = '服务端未配置 SecretKey，无法生成 UserSig';
     logger.warn('GET_USER_SIG', errorMsg, { userId });
+    logger.warn('Live-OBS-SERVER', '❌ get_user_sig：服务端未配置 SecretKey（OBS 推流码无法生成）', { userId });
     res.json({ code: -1, message: errorMsg });
     return;
   }
@@ -223,9 +230,16 @@ apiRouter.post('/get_user_sig', (req, res) => {
   if (!info || !info.UserSig) {
     const errorMsg = 'UserSig is undefined';
     logger.error('GET_USER_SIG', errorMsg, { userId, info });
+    logger.error('Live-OBS-SERVER', '❌ get_user_sig：getUserSig 返回空', { userId, hasInfo: !!info });
     res.json({ code: -1, message: errorMsg });
     return;
   }
+  logger.info('Live-OBS-SERVER', '✅ get_user_sig 签发成功', {
+    userId: info.UserId,
+    sdkAppId: info.SdkAppId,
+    userSigLength: info.UserSig ? info.UserSig.length : 0,
+    obsRelated: obsSig,
+  });
   res.json({
     code: 0,
     message: 'success',
@@ -371,6 +385,132 @@ const ALLOWED_DOMAIN_PATTERN = /^(adminapisgp\.im\.qcloud\.com|console\.tim\.qq\
 // SSRF 防护：阻止请求内网地址（元数据服务、私有 IP 等）
 const BLOCKED_HOSTS = /^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|0\.|169\.254\.)/i;
 
+// ---------- OBS / 建直播间 / 推流相关 REST 在服务端打印（与前端 [Live-OBS] 对照） ----------
+const OBS_TRTC_API_PATH_MARKERS = [
+  'account_import',
+  'create_room',
+  'destroy_room',
+  'add_robot',
+  'get_robot',
+  'del_robot',
+  'pick_user_on_seat',
+  'get_seat_list',
+  'kick_user_off_seat',
+  'set_room_metadata',
+  'get_room_metadata',
+  'del_room_metadata',
+  'update_room_info',
+  'get_room_info',
+];
+
+function isObsRelatedTrtcApi(apiPath) {
+  const p = String(apiPath || '');
+  return OBS_TRTC_API_PATH_MARKERS.some((m) => p.includes(m));
+}
+
+function summarizeTrtcBodyForObsLog(body) {
+  if (!body || typeof body !== 'object') return body;
+  const out = {};
+  if (body.RoomId != null) out.RoomId = body.RoomId;
+  if (body.UserID != null) out.UserID = body.UserID;
+  if (body.Nick != null) out.Nick = String(body.Nick).slice(0, 48);
+  if (body.Member_Account != null) out.Member_Account = body.Member_Account;
+  if (body.Index !== undefined) out.Index = body.Index;
+  if (Array.isArray(body.RobotList_Account)) {
+    const arr = body.RobotList_Account;
+    out.RobotList_Account =
+      arr.length <= 12 ? [...arr] : [...arr.slice(0, 12), `…共${arr.length}个`];
+  }
+  if (body.RoomInfo && typeof body.RoomInfo === 'object') {
+    const ri = body.RoomInfo;
+    out.RoomInfo = {
+      RoomId: ri.RoomId,
+      RoomType: ri.RoomType,
+      Owner_Account: ri.Owner_Account,
+      SeatTemplate: ri.SeatTemplate,
+      KeepOwnerOnSeat: ri.KeepOwnerOnSeat,
+      RoomName: ri.RoomName != null ? String(ri.RoomName).slice(0, 64) : ri.RoomName,
+    };
+  }
+  if (Array.isArray(body.Metadata)) out.Metadata_count = body.Metadata.length;
+  if (Array.isArray(body.Keys)) out.Keys = body.Keys.length <= 20 ? body.Keys : [...body.Keys.slice(0, 20), `…共${body.Keys.length}个`];
+  if (Object.keys(out).length === 0) out._bodyKeys = Object.keys(body);
+  return out;
+}
+
+function summarizeTrtcResponseForObsLog(result) {
+  if (!result || typeof result !== 'object') return { _raw: String(result) };
+  const out = {
+    ErrorCode: result.ErrorCode,
+    ErrorInfo: result.ErrorInfo,
+    ActionStatus: result.ActionStatus,
+    RequestId: result.RequestId,
+  };
+  const R = result.Response;
+  if (R && typeof R === 'object') {
+    out.ResponseKeys = Object.keys(R);
+    if (Array.isArray(R.RobotList_Account)) out.RobotList_Account_count = R.RobotList_Account.length;
+    if (Array.isArray(R.RobotList_Account) && R.RobotList_Account.length && R.RobotList_Account.length <= 15) {
+      out.RobotList_Account = R.RobotList_Account;
+    }
+    if (Array.isArray(R.SeatList)) {
+      out.SeatList_count = R.SeatList.length;
+      out.SeatList_preview = R.SeatList.slice(0, 8).map((s) => ({
+        Index: s.Index,
+        Member_Account: s.Member_Account,
+      }));
+    }
+    if (R.RoomInfo && typeof R.RoomInfo === 'object') {
+      const ri = R.RoomInfo;
+      out.RoomInfo_brief = {
+        RoomId: ri.RoomId,
+        Owner_Account: ri.Owner_Account,
+        OnlineCount: ri.OnlineCount,
+      };
+    }
+  }
+  if (Array.isArray(result.RobotList_Account)) {
+    out.RobotList_Account_root_count = result.RobotList_Account.length;
+  }
+  return out;
+}
+
+function logLiveObsTrtcRequest(apiPath, creds, domain, body) {
+  if (!isObsRelatedTrtcApi(apiPath)) return;
+  logger.info('Live-OBS-SERVER', `📤 转发 REST → ${apiPath}`, {
+    domain,
+    sdkAppId: creds?.sdkAppId,
+    identifier: creds?.identifier,
+    bodySummary: summarizeTrtcBodyForObsLog(body || {}),
+  });
+}
+
+function logLiveObsTrtcResponse(apiPath, creds, body, result) {
+  if (!isObsRelatedTrtcApi(apiPath)) return;
+  const ok = result?.ErrorCode === 0 || result?.ErrorCode === undefined;
+  logger.info(
+    'Live-OBS-SERVER',
+    `${ok ? '✅' : '❌'} 云端应答 ← ${apiPath} | RequestId=${result?.RequestId ?? '(无)'} | ErrorCode=${result?.ErrorCode ?? '(无)'}`,
+    {
+      sdkAppId: creds?.sdkAppId,
+      identifier: creds?.identifier,
+      requestSummary: summarizeTrtcBodyForObsLog(body || {}),
+      responseSummary: summarizeTrtcResponseForObsLog(result),
+    }
+  );
+  if (!ok && result?.ErrorInfo) {
+    logger.warn('Live-OBS-SERVER', `失败详情: ${apiPath}`, {
+      RequestId: result?.RequestId,
+      ErrorInfo: result.ErrorInfo,
+    });
+  }
+}
+
+function shouldLogGetUserSigAsObsFlow(userId) {
+  const u = String(userId || '');
+  return u.endsWith('_obs') || u.startsWith('auto_robot');
+}
+
 async function executeTrtcProxy(creds, apiPath, body, domainOverride) {
   const domain = domainOverride || process.env.DOMAIN || (creds.sdkAppId < 1400000000 ? 'adminapisgp.im.qcloud.com' : 'console.tim.qq.com');
 
@@ -395,12 +535,15 @@ async function executeTrtcProxy(creds, apiPath, body, domainOverride) {
   // 判断是否走限频队列
   const apiName = apiPath.split('/').pop() || '';
   if (TRTC_RATE_LIMIT_WHITELIST.has(apiName)) {
+    logLiveObsTrtcRequest(apiPath, creds, domain, body);
     const result = await doTrtcRequest(url, body || {});
+    logLiveObsTrtcResponse(apiPath, creds, body, result);
     logger.info('TRTC_PROXY', `📥 云端响应 (${apiPath})`, {
       sdkAppId: creds.sdkAppId,
       errorCode: result?.ErrorCode,
       errorInfo: result?.ErrorInfo,
       hasData: !!result,
+      requestId: result?.RequestId,
     });
     return result;
   }
@@ -414,17 +557,26 @@ async function executeTrtcProxy(creds, apiPath, body, domainOverride) {
         await new Promise(r => setTimeout(r, TRTC_REQUEST_INTERVAL - elapsed));
       }
       try {
+        logLiveObsTrtcRequest(apiPath, creds, domain, body);
         const result = await doTrtcRequest(url, body || {});
+        logLiveObsTrtcResponse(apiPath, creds, body, result);
         lastTrtcRequestTime = Date.now();
         logger.info('TRTC_PROXY', `📥 云端响应 (${apiPath})`, {
           sdkAppId: creds.sdkAppId,
           errorCode: result?.ErrorCode,
           errorInfo: result?.ErrorInfo,
           hasData: !!result,
+          requestId: result?.RequestId,
         });
         resolve(result);
       } catch (error) {
         lastTrtcRequestTime = Date.now();
+        if (isObsRelatedTrtcApi(apiPath)) {
+          logger.error('Live-OBS-SERVER', `请求异常（未拿到应答体）: ${apiPath}`, {
+            message: error?.message,
+            bodySummary: summarizeTrtcBodyForObsLog(body || {}),
+          });
+        }
         reject(error);
       }
     });
