@@ -12,8 +12,7 @@ live-demo/
 └── packages/
     ├── common/            # @live-manager/common
     ├── server/            # livekit-manager-server
-    ├── vue3/              # livekit-manager-vue3（单 Vite 前端）
-    └── audit-server/      # @live/audit-server
+    └── vue3/              # livekit-manager-vue3（单 Vite 前端）
 ```
 
 ## 安装
@@ -36,9 +35,6 @@ pnpm dev
 |------|-----|----------|
 | Web | `livekit-manager-vue3` | 5173 |
 | API | `livekit-manager-server` | 见 `packages/server` 配置（常见 9000） |
-| Audit | `@live/audit-server` | 3080（`AUDIT_PORT`） |
-
-前端通过 Vite 将 `/audit-api` 代理到审核服务（见 `packages/vue3/vite.config.ts`）。
 
 ## 构建
 

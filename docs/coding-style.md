@@ -32,9 +32,7 @@
 
 - `src/views/admin/`（可选逐步迁移）— 当前仍以 `room-list.vue` 等扁平文件为主，新功能优先分子目录。
 - `src/views/host/` — 主播端路由页面
-- `src/views/viewer/` — 观众联调页
 
 ## 环境变量
 
 - `VITE_API_BASE_URL`：`packages/server` 的 `/api` 基地址（默认开发 `http://localhost:9000/api`）
-- 审核服务开发代理：Vite `server.proxy` 将 `/audit-api` 转发至 `127.0.0.1:3080`

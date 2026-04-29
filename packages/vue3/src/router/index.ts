@@ -22,12 +22,6 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '主播端' },
   },
   {
-    path: '/viewer-smoke',
-    name: 'viewer-smoke',
-    component: () => import('@/views/viewer/ViewerSmokeView.vue'),
-    meta: { title: '观众联调' },
-  },
-  {
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
     children: [

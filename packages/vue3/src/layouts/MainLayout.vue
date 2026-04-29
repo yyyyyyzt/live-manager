@@ -88,10 +88,6 @@
               <Radio class="menu-icon" :size="20" />
               <span>主播端</span>
             </div>
-            <div class="menu-item" @click="router.push('/viewer-smoke')">
-              <MessageCircle class="menu-icon" :size="20" />
-              <span>观众联调</span>
-            </div>
           </nav>
         </div>
       </aside>
@@ -117,7 +113,6 @@ import {
   ChevronDown,
   LogOut,
   Radio,
-  MessageCircle,
 } from 'lucide-vue-next';
 import { useLiveMonitorState, useLoginState } from 'tuikit-atomicx-vue3/live';
 import {

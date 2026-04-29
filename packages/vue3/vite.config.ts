@@ -22,13 +22,7 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     allowedHosts: true,
-    proxy: {
-      '/audit-api': {
-        target: 'http://127.0.0.1:3080',
-        changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/audit-api/, ''),
-      },
-    },
+    proxy: {},
   },
   build: {
     rollupOptions: {
