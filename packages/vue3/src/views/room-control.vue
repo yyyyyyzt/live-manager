@@ -24,6 +24,16 @@
             @update:value="handleToggleComments"
           />
         </div>
+        <n-button
+          type="primary"
+          secondary
+          strong
+          :disabled="!roomId || liveEndedOverlayVisible"
+          @click="openDemoBroadcastModal"
+        >
+          <template #icon><Megaphone /></template>
+          示例广播自定义消息
+        </n-button>
         <n-button quaternary type="error" @click="handleBanRoom">
           <template #icon><CircleStop /></template>
           强制关播
@@ -377,6 +387,33 @@
       </div>
     </n-modal>
 
+    <!-- 示例：Live Engine send_custom_msg（与 docs/LIVE_FRONTEND_ROOM_SIGNALS、demos/trtc-live-minimal/viewer.html 对齐） -->
+    <n-modal
+      v-model:show="demoBroadcastModalVisible"
+      preset="card"
+      title="广播自定义消息（send_custom_msg）"
+      :style="{ width: '520px' }"
+      @after-leave="demoBroadcastPayload = ''"
+    >
+      <p style="margin: 0 0 12px; color: var(--n-text-color-3); font-size: 13px">
+        走 Live Engine <code>send_custom_msg</code>，<code>BusinessId</code> 固定为
+        <code>{{ LIVE_MANAGER_CUSTOM_BUSINESS_ID }}</code>；观众端需用 Chat SDK 加入直播群（groupID = RoomId）后在
+        <code>MESSAGE_RECEIVED</code> 中解析（纯 TRTC Web SDK 收不到该广播）。
+      </p>
+      <n-input
+        v-model:value="demoBroadcastPayload"
+        type="textarea"
+        placeholder='JSON，例如 {"action":"demo_ping","msg":"hello"}'
+        :autosize="{ minRows: 6, maxRows: 14 }"
+      />
+      <n-space justify="end" style="margin-top: 16px">
+        <n-button @click="demoBroadcastModalVisible = false">取消</n-button>
+        <n-button type="primary" :loading="demoBroadcastLoading" @click="submitDemoBroadcast">
+          发送广播
+        </n-button>
+      </n-space>
+    </n-modal>
+
     <!-- 确认弹窗 -->
     <n-modal
       v-model:show="confirmDialogVisible"
@@ -481,6 +518,7 @@ import { useRoute, useRouter } from 'vue-router';
 import {
   ArrowLeft,
   CircleStop,
+  Megaphone,
   MoreHorizontal,
   Info,
   MessageSquareOff,
@@ -518,6 +556,8 @@ import {
   getMutedMemberList,
   kickUsersOutRoom,
   setRoomCommentsEnabled,
+  sendCustomMessage,
+  LIVE_MANAGER_CUSTOM_BUSINESS_ID,
   batchAddCrowdRobotsToRoom,
 } from '@/api/room';
 import {
@@ -565,6 +605,10 @@ const roomInfo = ref<RoomInfo | null>(null);
 /** 与房间 IsMessageDisabled 相反：true 表示允许观众发评论 */
 const commentsEnabled = ref(true);
 const commentsToggleLoading = ref(false);
+/** Live Engine 自定义消息示例（send_custom_msg），payload 为 UTF-8 JSON */
+const demoBroadcastModalVisible = ref(false);
+const demoBroadcastPayload = ref('');
+const demoBroadcastLoading = ref(false);
 const liveEndedOverlayVisible = ref(false);
 const activeTab = ref<'chat' | 'audience' | 'moderation'>('chat');
 const liveDuration = ref(0);
@@ -862,6 +906,48 @@ const handleToggleComments = async (enabled: boolean) => {
     showMessage('error', `操作失败: ${msg}`);
   } finally {
     commentsToggleLoading.value = false;
+  }
+};
+
+const openDemoBroadcastModal = () => {
+  if (!roomId.value || liveEndedOverlayVisible.value) return;
+  demoBroadcastPayload.value = JSON.stringify(
+    {
+      action: 'demo_ping',
+      roomId: roomId.value,
+      msg: '来自管理后台的示例广播（send_custom_msg）',
+      ts: Date.now(),
+    },
+    null,
+    2
+  );
+  demoBroadcastModalVisible.value = true;
+};
+
+const submitDemoBroadcast = async () => {
+  if (!roomId.value || demoBroadcastLoading.value) return;
+  let dataStr = demoBroadcastPayload.value.trim();
+  try {
+    const parsed = JSON.parse(dataStr);
+    dataStr = JSON.stringify(parsed);
+  } catch {
+    message.error('内容须为合法 JSON 字符串');
+    return;
+  }
+  demoBroadcastLoading.value = true;
+  try {
+    const res = await sendCustomMessage(roomId.value, LIVE_MANAGER_CUSTOM_BUSINESS_ID, dataStr, 'admin');
+    const code = res?.ErrorCode ?? (res as { Error?: number })?.Error ?? -1;
+    if (code !== 0) {
+      message.error(res?.ErrorInfo || '发送失败');
+      return;
+    }
+    message.success('已广播自定义消息（观众端需在 Chat 群内接收）');
+    demoBroadcastModalVisible.value = false;
+  } catch (e: unknown) {
+    message.error(e instanceof Error ? e.message : '发送失败');
+  } finally {
+    demoBroadcastLoading.value = false;
   }
 };
 
