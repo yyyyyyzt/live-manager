@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TRTC 极简 demo · 拉流端（观众）</title>
+  <script src="https://cdn.jsdelivr.net/npm/trtc-sdk-v5@latest"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 880px; margin: 24px auto; padding: 0 16px; }
+    label { display: block; margin-top: 12px; font-weight: 600; }
+    input[type="text"], textarea { width: 100%; box-sizing: border-box; margin-top: 4px; }
+    textarea { min-height: 100px; font-family: ui-monospace, monospace; }
+    button { margin-top: 12px; margin-right: 8px; padding: 8px 14px; cursor: pointer; }
+    #remote { width: 100%; max-width: 640px; aspect-ratio: 16/9; background: #111; margin-top: 12px; }
+    #log { white-space: pre-wrap; font-size: 12px; background: #f5f5f5; padding: 8px; max-height: 220px; overflow: auto; }
+    .hint { color: #555; font-size: 13px; margin-top: 8px; }
+    code { background: #eee; padding: 2px 6px; }
+  </style>
+</head>
+<body>
+  <h1>拉流端（观众）</h1>
+  <p class="hint">
+    打开推流端生成的「分享链接」可自动填入房间号与自定义信息；或手动填写与主播相同的 <code>strRoomId</code>。
+    远端视频需占位 DOM：id 为 <code>${userId}_${streamType}</code>（见下方容器）。
+    请通过本地静态服务器访问（与推流端同一 origin），例如 <code>python3 -m http.server 8765</code>。
+  </p>
+
+  <label>strRoomId（必须与推流端一致）</label>
+  <input id="roomId" type="text" value="demo_live_room_6f54" />
+
+  <label>解析得到的房间自定义信息（来自 URL 参数 meta，或由您对照主播侧约定）</label>
+  <textarea id="metaDisplay" readonly></textarea>
+
+  <div>
+    <button id="btnJoin" type="button">进入房间并拉流</button>
+    <button id="btnLeave" type="button" disabled>退房</button>
+  </div>
+
+  <label>远端画面（主流）</label>
+  <div id="remote"></div>
+
+  <label>自定义消息（<code>CUSTOM_MESSAGE</code>）</label>
+  <div id="log"></div>
+
+  <script>
+    const SDK_APP_ID = 1600134769;
+    const USER_ID = 'viewer_demo_6f54';
+    const USER_SIG =
+      'eJwtjEsLgkAURv-L3Roy2jgzDbQxpEUPKJMeG0nnGpcwxTdG-z0ol*ecj*8Np21od1iBBtdmMPsxGXw1lNFPd4Q9VrHBvIhF5vFpU5vnvSzJgHYEY86cS7H4l4ZyBO1IKbmrmJosDiVVCFowrhibPugBGvaJVxfrNPL7oYncNrz6h9ZSu9FKLucg9ayVdI9m3AT9rV7C5wtpNjTm';
+
+    const logEl = document.getElementById('log');
+    function log(msg) {
+      logEl.textContent += msg + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function readQuery() {
+      const p = new URLSearchParams(window.location.search);
+      const strRoomId = p.get('strRoomId');
+      const metaEnc = p.get('meta');
+      if (strRoomId) document.getElementById('roomId').value = strRoomId;
+      if (metaEnc) {
+        try {
+          const meta = JSON.parse(decodeURIComponent(metaEnc));
+          document.getElementById('metaDisplay').value = JSON.stringify(meta, null, 2);
+        } catch (e) {
+          document.getElementById('metaDisplay').value = 'meta 解析失败: ' + e;
+        }
+      } else {
+        document.getElementById('metaDisplay').value =
+          '（未通过 URL 传入 meta；若仅手动输入房间号，请自行与主播约定自定义字段含义）';
+      }
+    }
+    readQuery();
+
+    let trtc;
+
+    document.getElementById('btnJoin').onclick = async () => {
+      const strRoomId = document.getElementById('roomId').value.trim();
+      if (!strRoomId) {
+        alert('请填写 strRoomId');
+        return;
+      }
+
+      trtc = TRTC.create();
+
+      trtc.on(TRTC.EVENT.REMOTE_VIDEO_AVAILABLE, ({ userId, streamType }) => {
+        const view = `${userId}_${streamType}`;
+        const box = document.getElementById('remote');
+        let el = document.getElementById(view);
+        if (!el) {
+          el = document.createElement('div');
+          el.id = view;
+          el.style.width = '100%';
+          el.style.height = '100%';
+          box.innerHTML = '';
+          box.appendChild(el);
+        }
+        trtc.startRemoteVideo({ userId, streamType, view });
+        log('REMOTE_VIDEO_AVAILABLE → startRemoteVideo ' + userId + ' ' + streamType);
+      });
+
+      trtc.on(TRTC.EVENT.REMOTE_VIDEO_UNAVAILABLE, ({ userId, streamType }) => {
+        log('REMOTE_VIDEO_UNAVAILABLE ' + userId + ' ' + streamType);
+      });
+
+      trtc.on(TRTC.EVENT.CUSTOM_MESSAGE, (event) => {
+        const text = new TextDecoder().decode(event.data);
+        log(
+          '[CUSTOM_MESSAGE] from=' +
+            event.userId +
+            ' cmdId=' +
+            event.cmdId +
+            ' seq=' +
+            event.seq +
+            ' text=' +
+            text
+        );
+      });
+
+      trtc.on(TRTC.EVENT.ERROR, (err) => log('ERROR ' + JSON.stringify(err)));
+
+      try {
+        await trtc.enterRoom({
+          sdkAppId: SDK_APP_ID,
+          userId: USER_ID,
+          userSig: USER_SIG,
+          strRoomId,
+          scene: TRTC.TYPE.SCENE_LIVE,
+          role: TRTC.TYPE.ROLE_AUDIENCE,
+          autoReceiveVideo: true,
+        });
+        log('进房成功（观众），等待主播视频流…');
+      } catch (e) {
+        log('进房失败 ' + e);
+        trtc.destroy();
+        trtc = null;
+        return;
+      }
+
+      document.getElementById('btnJoin').disabled = true;
+      document.getElementById('btnLeave').disabled = false;
+    };
+
+    document.getElementById('btnLeave').onclick = async () => {
+      try {
+        await trtc.exitRoom();
+      } catch (e) {
+        log('exitRoom ' + e);
+      }
+      trtc.destroy();
+      trtc = null;
+      document.getElementById('btnJoin').disabled = false;
+      document.getElementById('btnLeave').disabled = true;
+      document.getElementById('remote').innerHTML = '';
+      log('已退房');
+    };
+  </script>
+</body>
+</html>
