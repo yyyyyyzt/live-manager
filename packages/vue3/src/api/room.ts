@@ -31,6 +31,7 @@ export {
   importAccount,
   kickUsersOutRoom,
   setRoomCommentsEnabled,
+  sendCustomMessage,
   LIVE_MANAGER_CUSTOM_BUSINESS_ID,
   batchAddCrowdRobotsToRoom,
   parseRobotListFromGetRobotResponse,

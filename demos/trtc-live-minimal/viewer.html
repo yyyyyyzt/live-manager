@@ -3,138 +3,124 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TRTC 极简 demo · 拉流端（观众）</title>
-  <script src="https://cdn.jsdelivr.net/npm/trtc-sdk-v5@latest"></script>
+  <title>极简观众 · 接收管理后台 send_custom_msg</title>
+  <!-- 与 tuikit 一致的 Chat Lite SDK（直播群 = AVChatRoom，groupID = Live Engine RoomId） -->
+  <script src="https://cdn.jsdelivr.net/npm/@tencentcloud/lite-chat@1.6.12/standard.js"></script>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 880px; margin: 24px auto; padding: 0 16px; }
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 16px; line-height: 1.5; }
     label { display: block; margin-top: 12px; font-weight: 600; }
-    input[type="text"], textarea { width: 100%; box-sizing: border-box; margin-top: 4px; }
-    textarea { min-height: 100px; font-family: ui-monospace, monospace; }
+    input[type="text"], textarea { width: 100%; box-sizing: border-box; margin-top: 4px; font-family: inherit; }
+    textarea { min-height: 220px; font-size: 12px; }
     button { margin-top: 12px; margin-right: 8px; padding: 8px 14px; cursor: pointer; }
-    #remote { width: 100%; max-width: 640px; aspect-ratio: 16/9; background: #111; margin-top: 12px; }
-    #log { white-space: pre-wrap; font-size: 12px; background: #f5f5f5; padding: 8px; max-height: 220px; overflow: auto; }
-    .hint { color: #555; font-size: 13px; margin-top: 8px; }
+    .hint { color: #444; font-size: 13px; margin-bottom: 16px; }
     code { background: #eee; padding: 2px 6px; }
+    #status { font-size: 13px; margin-top: 8px; }
   </style>
 </head>
 <body>
-  <h1>拉流端（观众）</h1>
+  <h1>极简观众 · 自定义消息接收示例</h1>
   <p class="hint">
-    打开推流端生成的「分享链接」可自动填入房间号与自定义信息；或手动填写与主播相同的 <code>strRoomId</code>。
-    远端视频需占位 DOM：id 为 <code>${userId}_${streamType}</code>（见下方容器）。
-    请通过本地静态服务器访问（与推流端同一 origin），例如 <code>python3 -m http.server 8765</code>。
+    管理后台 <strong>「直播间详情 → 示例广播自定义消息」</strong> 调用的是 Live Engine <code>send_custom_msg</code>，
+    消息投递到 <strong>IM 直播群</strong>（<code>groupID</code> 与后台 <code>RoomId</code> 相同，例如 <code>live_主播ID</code>）。
+    本页使用 <code>@tencentcloud/lite-chat</code>：登录 → <code>joinGroup</code> → 监听 <code>MESSAGE_RECEIVED</code>。
+    <strong>纯 TRTC Web SDK 无法收到该广播</strong>（与 RTC 自定义消息不是一条链路）。
   </p>
 
-  <label>strRoomId（必须与推流端一致）</label>
-  <input id="roomId" type="text" value="demo_live_room_6f54" />
-
-  <label>解析得到的房间自定义信息（来自 URL 参数 meta，或由您对照主播侧约定）</label>
-  <textarea id="metaDisplay" readonly></textarea>
+  <label>RoomId（与「直播间管理」列表中的直播间 ID 一致）</label>
+  <input id="roomId" type="text" placeholder="例如 live_anchor001" />
 
   <div>
-    <button id="btnJoin" type="button">进入房间并拉流</button>
-    <button id="btnLeave" type="button" disabled>退房</button>
+    <button id="btnJoin" type="button">登录并入群（接收广播）</button>
+    <button id="btnLeave" type="button" disabled>退群并登出</button>
   </div>
+  <div id="status"></div>
 
-  <label>远端画面（主流）</label>
-  <div id="remote"></div>
-
-  <label>自定义消息（<code>CUSTOM_MESSAGE</code>）</label>
-  <div id="log"></div>
+  <label>收到的消息（含 TIMCustomElem）</label>
+  <textarea id="log" readonly placeholder="连接成功后，在管理后台点「示例广播自定义消息」发送即可在此看到…"></textarea>
 
   <script>
+    /**
+     * 测试观众 IM 账号（需在控制台导入该 userID；SecretKey 仅用于 MCP 生成 userSig，勿泄露到生产）
+     * 若报「账号不存在」，请到腾讯云 IM 控制台导入 viewer_im_demo_6f54。
+     */
     const SDK_APP_ID = 1600134769;
-    const USER_ID = 'viewer_demo_6f54';
+    const USER_ID = 'viewer_im_demo_6f54';
     const USER_SIG =
-      'eJwtjEsLgkAURv-L3Roy2jgzDbQxpEUPKJMeG0nnGpcwxTdG-z0ol*ecj*8Np21od1iBBtdmMPsxGXw1lNFPd4Q9VrHBvIhF5vFpU5vnvSzJgHYEY86cS7H4l4ZyBO1IKbmrmJosDiVVCFowrhibPugBGvaJVxfrNPL7oYncNrz6h9ZSu9FKLucg9ayVdI9m3AT9rV7C5wtpNjTm';
+      'eJwtysEKgkAUheF3udtCZnSasYHWBimFaVkbEeaql7JES5Po3QN1eb7zfyHyj1aHDWiwLQbLcZPBx4tyGrkj7LFJqUoNVs9U5isxZ625ZXVNBjSXjHFHKLmenhdVCJorpYSSjLNJ8VNTg6AlEy6braUCNMQZzxeOivfDoQxc*3QXQ78zZzmUYeJHwTZpPaqu3vsSFhv4-QEl3zY1';
 
+    const TencentCloudChat = window.TencentCloudChat;
     const logEl = document.getElementById('log');
-    function log(msg) {
-      logEl.textContent += msg + '\n';
+    const statusEl = document.getElementById('status');
+
+    function log(line) {
+      logEl.value += line + '\n';
       logEl.scrollTop = logEl.scrollHeight;
     }
 
-    function readQuery() {
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    let chat;
+
+    function parseUrlParams() {
       const p = new URLSearchParams(window.location.search);
-      const strRoomId = p.get('strRoomId');
-      const metaEnc = p.get('meta');
-      if (strRoomId) document.getElementById('roomId').value = strRoomId;
-      if (metaEnc) {
-        try {
-          const meta = JSON.parse(decodeURIComponent(metaEnc));
-          document.getElementById('metaDisplay').value = JSON.stringify(meta, null, 2);
-        } catch (e) {
-          document.getElementById('metaDisplay').value = 'meta 解析失败: ' + e;
+      const rid = p.get('roomId');
+      if (rid) document.getElementById('roomId').value = rid;
+    }
+    parseUrlParams();
+
+    function onMessageReceived(event) {
+      const list = event.data || [];
+      for (const msg of list) {
+        const base = `[${msg.type}] from=${msg.from} to=${msg.to} time=${msg.time}`;
+        if (msg.type === TencentCloudChat.TYPES.MSG_CUSTOM) {
+          let extra = '';
+          try {
+            const ext = msg.payload && msg.payload.extension ? JSON.parse(msg.payload.extension) : null;
+            if (ext && ext.BusinessId) extra = ` BusinessId=${ext.BusinessId}`;
+          } catch (_) {}
+          log(base + extra + '\n  payload=' + JSON.stringify(msg.payload));
+        } else {
+          log(base + '\n  ' + JSON.stringify(msg.payload));
         }
-      } else {
-        document.getElementById('metaDisplay').value =
-          '（未通过 URL 传入 meta；若仅手动输入房间号，请自行与主播约定自定义字段含义）';
       }
     }
-    readQuery();
-
-    let trtc;
 
     document.getElementById('btnJoin').onclick = async () => {
-      const strRoomId = document.getElementById('roomId').value.trim();
-      if (!strRoomId) {
-        alert('请填写 strRoomId');
+      const groupID = document.getElementById('roomId').value.trim();
+      if (!groupID) {
+        alert('请填写 RoomId');
         return;
       }
 
-      trtc = TRTC.create();
+      chat = TencentCloudChat.create({ SDKAppID: SDK_APP_ID });
+      chat.setLogLevel(1);
 
-      trtc.on(TRTC.EVENT.REMOTE_VIDEO_AVAILABLE, ({ userId, streamType }) => {
-        const view = `${userId}_${streamType}`;
-        const box = document.getElementById('remote');
-        let el = document.getElementById(view);
-        if (!el) {
-          el = document.createElement('div');
-          el.id = view;
-          el.style.width = '100%';
-          el.style.height = '100%';
-          box.innerHTML = '';
-          box.appendChild(el);
-        }
-        trtc.startRemoteVideo({ userId, streamType, view });
-        log('REMOTE_VIDEO_AVAILABLE → startRemoteVideo ' + userId + ' ' + streamType);
-      });
-
-      trtc.on(TRTC.EVENT.REMOTE_VIDEO_UNAVAILABLE, ({ userId, streamType }) => {
-        log('REMOTE_VIDEO_UNAVAILABLE ' + userId + ' ' + streamType);
-      });
-
-      trtc.on(TRTC.EVENT.CUSTOM_MESSAGE, (event) => {
-        const text = new TextDecoder().decode(event.data);
-        log(
-          '[CUSTOM_MESSAGE] from=' +
-            event.userId +
-            ' cmdId=' +
-            event.cmdId +
-            ' seq=' +
-            event.seq +
-            ' text=' +
-            text
-        );
-      });
-
-      trtc.on(TRTC.EVENT.ERROR, (err) => log('ERROR ' + JSON.stringify(err)));
+      chat.on(TencentCloudChat.EVENT.MESSAGE_RECEIVED, onMessageReceived);
+      chat.on(TencentCloudChat.EVENT.SDK_READY, () => setStatus('SDK_READY'));
 
       try {
-        await trtc.enterRoom({
-          sdkAppId: SDK_APP_ID,
-          userId: USER_ID,
-          userSig: USER_SIG,
-          strRoomId,
-          scene: TRTC.TYPE.SCENE_LIVE,
-          role: TRTC.TYPE.ROLE_AUDIENCE,
-          autoReceiveVideo: true,
-        });
-        log('进房成功（观众），等待主播视频流…');
+        await chat.login({ userID: USER_ID, userSig: USER_SIG });
+        setStatus('IM 登录成功，正在加入直播群…');
       } catch (e) {
-        log('进房失败 ' + e);
-        trtc.destroy();
-        trtc = null;
+        setStatus('登录失败: ' + (e && e.message ? e.message : e));
+        log('login error: ' + e);
+        return;
+      }
+
+      try {
+        const joinRes = await chat.joinGroup({ groupID, type: TencentCloudChat.TYPES.GRP_AVCHATROOM });
+        setStatus('已加入群 ' + groupID + '（可接收 send_custom_msg）');
+        log('joinGroup: ' + JSON.stringify(joinRes.data || joinRes));
+      } catch (e) {
+        const info = (e && e.message) || String(e);
+        setStatus('加群失败: ' + info);
+        log('joinGroup error: ' + info);
+        try {
+          await chat.logout();
+        } catch (_) {}
+        chat = null;
         return;
       }
 
@@ -143,17 +129,21 @@
     };
 
     document.getElementById('btnLeave').onclick = async () => {
-      try {
-        await trtc.exitRoom();
-      } catch (e) {
-        log('exitRoom ' + e);
-      }
-      trtc.destroy();
-      trtc = null;
-      document.getElementById('btnJoin').disabled = false;
+      const groupID = document.getElementById('roomId').value.trim();
       document.getElementById('btnLeave').disabled = true;
-      document.getElementById('remote').innerHTML = '';
-      log('已退房');
+      try {
+        if (groupID && chat) await chat.quitGroup(groupID);
+      } catch (e) {
+        log('quitGroup: ' + e);
+      }
+      try {
+        if (chat) await chat.logout();
+      } catch (e) {
+        log('logout: ' + e);
+      }
+      chat = null;
+      document.getElementById('btnJoin').disabled = false;
+      setStatus('已退群并登出');
     };
   </script>
 </body>
