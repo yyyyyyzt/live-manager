@@ -6,7 +6,6 @@
 
 - [pnpm 工作区与构建](pnpm-workspace.md)
 - [前端编码范式（Naive UI）](coding-style.md)
-- [观众侧评论审核 HTTP 契约](AUDIENCE_MODERATION_CONTRACT.md)（文档中的 `/api/moderation/...` 为契约目标形态；**当前仓库** `packages/audit-server` 路由为 `/api/v1/...`，`packages/vue3` 开发态经 Vite 将 **`/audit-api` → `http://localhost:3080`**，联调以代理与 `audit-server` 代码为准。）
 
 **一键启动（目标态）**
 
@@ -16,7 +15,7 @@ pnpm install
 pnpm dev
 ```
 
-应同时拉起：`livekit-manager-vue3`（单 Vite）、`livekit-manager-server`、`@live/audit-server`。
+应同时拉起：`livekit-manager-vue3`（单 Vite）、`livekit-manager-server`。
 
 ---
 
@@ -36,31 +35,26 @@ pnpm dev
 - [x] `App.vue`：`NConfigProvider` + Message/Dialog/Notification Provider
 - [x] 全局反馈：`src/utils/message.ts`（`createDiscreteApi`）
 - [x] `packages/vue3` 源码：**无** `tdesign-*` 引用；图标统一 **lucide-vue-next**（`@live-manager/common` 内 `user-action-dropdown` 仍为历史实现，若管理端引用需另行迁移）
-- [x] **Gate B**：`pnpm --filter livekit-manager-vue3 build` 通过（`vue-tsc -b && vite build`）；`pnpm dev` 可同时拉起 Web/API/Audit 三进程
+- [x] **Gate B**：`pnpm --filter livekit-manager-vue3 build` 通过（`vue-tsc -b && vite build`）；`pnpm dev` 可同时拉起 Web/API 两进程
 
 ---
 
-## Phase C — 路由：管理 / 主播 / 观众联调
+## Phase C — 路由：管理 / 主播
 
 - [x] `/host` 主播占位页
-- [x] `/viewer-smoke` 观众联调页（经 Vite 代理调审核服务）
 - [x] 管理端「建场后」生成可复制 **主播入口链接**：`packages/server` 新增 `/api/host_entry/issue` 与 `/api/host_entry/consume`（HMAC 短期 token，默认 5 分钟），管理端列表每行「主播链接」一键复制，`/host` 页自动消费 token 完成 TUILogin
 - [x] **Gate C**：管理员建场 → 复制主播链接 → 主播页已换取凭证并完成 TUILogin；推流能力按产品接入 TUILiveKit（在 `HostStudioView.vue` 已留接入槽位）
 
 ---
 
-## Phase D — 审核服务（先审后发）
+## Phase D — （已移除）独立审核服务
 
-- [x] `packages/audit-server`：内存存储 + `X-Admin-Token` 管理接口；同时提供 `/api/v1/...` 与契约 `/api/moderation/...` 两套路由；新增 `published` 接口与 `clientMsgId` 去重
-- [x] `approve` 后通过管理端 `trtc_proxy` 调 `send_group_msg`（可由 `PUSH_APPROVED_TO_ROOM=1` 控制，**无重复签名逻辑**）
-- [x] **Redis SWAP**：`packages/audit-server/src/store.js` 已补齐 `RedisCommentStore` 接口说明与 KEY 设计注释，替换时保持同名导出即可
-- [x] **Gate D**：`viewer-smoke` 投稿 → 审核服务 pending 列表 → approve 后进入 `published` 列表；启用 `PUSH_APPROVED_TO_ROOM` 后可触达 TRTC 房间消息（依赖管理员凭证）
+曾包含 `@live/audit-server` 与 `/viewer-smoke` 联调。**已从本仓库删除**。若需「先审后发」，请在业务侧自建队列与投递逻辑。
 
 ---
 
 ## Phase E — 文档与联调
 
-- [x] `docs/AUDIENCE_MODERATION_CONTRACT.md`（若与实现不一致需同步修订）
 - [x] `docs/progress.md`（本文件）
 - [x] `docs/pnpm-workspace.md`
 - [x] `docs/coding-style.md`
@@ -82,8 +76,7 @@ pnpm dev
 ## 下一步（Backlog）
 
 1. **Gate E 外部验收**：新成员按 [`docs/README.monorepo.md`](./README.monorepo.md) 跑通 `pnpm dev` 全链路。
-2. **Redis SWAP 落地**：按 `packages/audit-server/src/store.js` 顶部注释实现 `RedisCommentStore`，替换时仅调 `index.js` 的 import。
-3. **机器人 / OBS 高级能力**：管理端 `room-list.vue` 保留的 OBS 详情弹窗拉取逻辑待产品决策；默认隐藏，重新上线时另立路由。
-4. **`trtc_proxy` 群组自动创建**：`approve` 代发 `send_group_msg` 前若 GroupId 不存在会返回 10015，后续可在 `packages/server` 加一层 `create_group` 前置或在管理端建场时同步创建 IM 群。
+2. **机器人 / OBS 高级能力**：管理端 `room-list.vue` 保留的 OBS 详情弹窗拉取逻辑待产品决策；默认隐藏，重新上线时另立路由。
+3. **`trtc_proxy` 群组**：若业务自建「审核后代发群消息」，需保证 IM 群（GroupId = RoomId）已创建。
 
 **最后更新**：以 Git 提交为准；修改计划时请同步勾选本文件对应条目。

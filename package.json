@@ -2,10 +2,9 @@
   "name": "live-demo",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n web,server,audit -c cyan,magenta,green \"pnpm --filter livekit-manager-vue3 dev\" \"pnpm --filter livekit-manager-server start\" \"pnpm --filter @live/audit-server dev\"",
+    "dev": "concurrently -n web,server -c cyan,magenta \"pnpm --filter livekit-manager-vue3 dev\" \"pnpm --filter livekit-manager-server start\"",
     "dev:web": "pnpm --filter livekit-manager-vue3 dev",
     "dev:server": "pnpm --filter livekit-manager-server start",
-    "dev:audit": "pnpm --filter @live/audit-server dev",
     "build": "pnpm --filter livekit-manager-vue3 build",
     "build:web": "pnpm --filter livekit-manager-vue3 build",
     "install:all": "pnpm install"
